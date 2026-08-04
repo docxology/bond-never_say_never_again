@@ -1,1 +1,1 @@
-"""Tests for small code project."""
+"""Package marker for the REMOUNT test suite."""

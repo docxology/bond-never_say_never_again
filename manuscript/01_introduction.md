@@ -1,60 +1,32 @@
-# Introduction {#sec:introduction}
+# Introduction
 
-This `never_say_never_again` serves as the foundational exemplar for the [Research Project Template](https://github.com/docxology/template) ecosystem, demonstrating a fully-tested numerical optimization implementation bracketed by rigorous infrastructure, hermetic testing, and extensive documentation architectures. The prose, the labelled figures, and the labelled equations have all been generated through an auditable custody chain starting from algorithm implementation through strict CI/CD validation to multi-format `.pdf` compilation.
+## Never Say Never Again and the remount battalion
 
-## Template Architecture Context
+*Never Say Never Again* (1983) is a curious entry in the Bond canon: it is a
+remake — a *remount* — of *Thunderball* (1965), produced without the Eon
+series and starring a returning Bond. Rather than a new story it re-stages an
+old one, modernized and re-equipped. This is precisely the operational meaning
+of a **legacy mission remount**: keep the objective set, refresh the resources,
+and re-run the scenario against the current threat model.
 
-Scientific engineering requires mathematical accuracy combined with software reliability. This project unifies theoretical optimization with the repository's three foundational pillars:
+REMOUNT ({{MISSION_CODENAME}}, package {{PACKAGE_VERSION}}) operationalizes
+that idea as software for {{FILM_IDENTITY}}. It provides three capabilities:
 
-1. **`infrastructure/` Layer (Root Directory)**: A modular stack of importable Python packages providing the computational scaffolding. The current package count is measured in the template repository's generated canonical facts rather than repeated here because it changes as infrastructure modules are added or retired.
-2. **`tests/` Framework (`projects/working/bond/never_say_never_again/tests/`)**: An uncompromising validation layer maintaining a zero-mock testing policy. This is enforced automatically via the [CI workflow](https://github.com/docxology/template/blob/main/.github/workflows/ci.yml) mapping to `pyproject.toml` directives.
-3. **`docs/` Knowledge Base (`projects/working/bond/never_say_never_again/docs/`)**: A structured repository of architectural guidelines, operational patterns, and the Rigorous Agentic Scientific Protocol (RASP) that governs the AI-assisted agents writing these very texts.
+1. **Legacy mission replay** (`mission_replay.py`) — deterministically re-run a
+   prior operation's scenario under a remount configuration.
+2. **Op diff** (`op_diff.py`) — compare the original outcome against the
+   remount, per objective and in aggregate.
+3. **Legacy asset migration** (`legacy_assets.py`) — carry forward,
+   re-fingerprint, and verify the intelligence assets the remount consumes.
 
-This implementation of gradient descent algorithms for solving optimization problems is used as the vehicle to demonstrate these pillars. The theoretical problem stated in [@eq:optimization_problem] is mapped programmatically inside the [optimizer module](https://github.com/docxology/template/blob/main/projects/working/bond/never_say_never_again/src/optimizer.py):
+Together they answer the operative question of any re-op: *is the remount
+actually an improvement, and can we trust the intel it relied on?*
 
-\begin{equation}
-\label{eq:optimization_problem}
-\min_{x \in \mathbb{R}^n} f(x)
-\end{equation}
+## Why determinism
 
-where $f: \mathbb{R}^n \rightarrow \mathbb{R}$ is a continuously differentiable objective function.
-
-## Infrastructure Integration
-
-Rather than existing as isolated scripts, this project extensively leverages the `infrastructure` layer:
-
-- **Scientific Utilities**: Utilizing `infrastructure.scientific.stability` and `infrastructure.scientific.benchmarking` to check numerical boundaries and exercise runtime performance diagnostics without pinning host-dependent timings.
-- **Hermetic Validation**: Deploying `infrastructure.validation` components (`markdown_validator`, `output_validator`) to ensure generated artifacts are structurally valid and traceable.
-- **Reporting & Rendering**: Employing `infrastructure.rendering.pdf_renderer` and `infrastructure.reporting.executive_reporter` to automatically transform code outputs into this finalized manuscript.
-
-## Algorithm Overview
-
-The reference gradient descent algorithm iteratively updates the solution using the rule shown in [@eq:gradient_descent_update]:
-
-\begin{equation}
-\label{eq:gradient_descent_update}
-x_{k+1} = x_k - \alpha \nabla f(x_k)
-\end{equation}
-
-where $\alpha > 0$ is the step size (learning rate) and $\nabla f(x_k)$ is the gradient of the objective function at iteration $k$.
-
-## Exemplar Implementation Goals
-
-As the representative project for the repository, this implementation explicitly demonstrates:
-
-1. **Infrastructure-Coupled Code**: Scientific implementations that delegate logging, file ops, and reporting to the `infrastructure` core.
-2. **Zero-Mock Verification**: A strict comprehensive validation suite proving numerical accuracy without artificial test boundaries.
-3. **Automated Research Pipelines**: High-precision analyses that generate publication-quality, accessible visualizations automatically.
-4. **Agentic Documentation standards**: Native adherence to the RASP methodology and `AGENTS.md` guidelines, ensuring the logic remains verifiable by both human and artificial intelligence.
-
-## Reader's guide to the manuscript
-
-- **[@sec:methodology]** ties pseudocode to `gradient_descent()` and explains how stability checks and benchmarks call into `infrastructure.scientific`.
-- **[@sec:results]** is figure-centric: every panel references a generator in `src/figures/` (orchestrated via `scripts/optimization_analysis.py`) and uses `CONFIG_*` / `RESULT_*` template tokens for numeric values.
-- **[@sec:experimental_setup]** lists the exact YAML fields (`experiment:` block) that controlled the run whose artifacts you are viewing.
-- **[@sec:reproducibility]** records the configuration hash and artifact inventory produced alongside the PDF.
-- **[@sec:scope]** states scope and related literature so the exemplar is not mistaken for a general-purpose optimizer benchmark suite.
-
-## Why a quadratic model
-
-Restricting $f$ to a quadratic with known $(A,b)$ keeps the optimum, gradient, and spectral data explicit. For $A = I$ and $b = \mathbf{1}$, the optimal point is $x^\ast = \mathbf{1}$ and gradient descent with fixed $\alpha$ reduces to a linear iteration in the error (see [@eq:scalar_linear_update] in the results section). That simplicity isolates step-size effects and makes divergent choices ($\alpha \geq 2$ in 1D) visible in both plots and CSV rows without requiring trust-region or line-search fixes—those extensions are left to future work ([@sec:scope]).
+A remount is an audit as much as an operation. Every number produced —
+command score, objective delta, asset fingerprint — must be reproducible by an
+independent reviewer without re-running the whole suite. The engine therefore
+makes **no random draws and no external calls**: its success model is a fixed
+Logistic curve, its hashing is canonical SHA-256, and two runs under the same
+inputs are byte-identical.

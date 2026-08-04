@@ -1,11 +1,25 @@
-# Abstract {#sec:abstract}
+# Abstract
 
-This paper presents a convergence study of **fixed-step gradient descent** on a convex quadratic, framed as the computational exemplar of the [Research Project Template](https://github.com/docxology/template). The implementation lives in `projects/working/bond/never_say_never_again/src/optimizer.py`; experiments and figures are orchestrated by `projects/working/bond/never_say_never_again/scripts/optimization_analysis.py` and hydrated into the manuscript through `scripts/z_generate_manuscript_variables.py`, so tables and prose track `output/data/optimization_results.csv` after every pipeline run.
+**{{PAPER_TITLE}}** ({{PAPER_SUBTITLE}}, version {{PACKAGE_VERSION}}) presents
+REMOUNT, a deterministic engine for *legacy mission replay*. When an operation
+is re-opened years after its original run, its scenario must be re-executed —
+as a *remount* — with remastered intelligence, its outcomes compared against
+the original, and its legacy assets migrated so they can be consumed safely
+again.
 
-We evaluate {{CONFIG_NUM_STEP_SIZES}} step sizes from $\alpha = {{CONFIG_MIN_STEP_SIZE}}$ to $\alpha = {{CONFIG_MAX_STEP_SIZE}}$, spanning conservative, near-optimal, aggressive, and divergent regimes for a unit Hessian model. The build chain exercises template infrastructure end-to-end: scientific helpers (`infrastructure.scientific.stability`, `infrastructure.scientific.benchmarking`), validation, rendering (`infrastructure/rendering/pdf_renderer.py`), and reporting. Accessibility-oriented plotting defaults (colourblind-safe palette, 300 dpi exports) are centralized in `src/figures/` and `src/analysis/`.
+Drawing on the 1983 film *Never Say Never Again* — itself a remount of the
+1965 *Thunderball* operation ({{FILM_IDENTITY}}, mission codename
+{{MISSION_CODENAME}}) — the engine models each of {{NUM_OBJECTIVES}} objectives
+through a smooth success curve over effective intel versus difficulty. The
+canonical replay yields an original command score of {{ORIGINAL_COMMAND_SCORE}}
+and a remount command score of {{REMOUNT_COMMAND_SCORE}} (weighted delta
+{{COMMAND_DELTA}}, overall verdict *{{OVERALL_VERDICT}}*). Per-objective, the
+remount improves {{NUM_IMPROVED}} objectives, regresses {{NUM_REGRESSED}}, and
+leaves {{NUM_UNCHANGED}} unchanged. The engine migrates
+{{MIGRATED_ASSET_COUNT}} legacy intelligence dossiers, re-fingerprinting each
+(SHA-256) so the remount can verify integrity before consumption
+(fingerprint {{ASSET_FINGERPRINT}}).
 
-Contributions are **methodological** and **architectural**. On the methods side, we relate empirical iteration counts and error decay to the scalar contraction factor $\rho(\alpha) = |1-\alpha|$ and document cases where runs hit $N_{\max} = {{CONFIG_MAX_ITERATIONS}}$ before meeting the gradient tolerance. On the architecture side, we demonstrate a zero-mock test suite on project `src/` (see [test_optimizer.py](https://github.com/docxology/template/blob/main/projects/working/bond/never_say_never_again/tests/test_optimizer.py)), automated six-figure analysis, and reproducibility metadata (configuration hash, artifact counts) injected into [@sec:reproducibility].
-
-**Results (this configuration):** {{RESULT_NUM_CONVERGED}} of {{CONFIG_NUM_STEP_SIZES}} grid points report `converged=True` in the CSV; non-convergent rows flag either slow progress at small $\alpha$ under the iteration cap or instability when $|1-\alpha| \geq 1$. The analytical minimizer remains $x^\ast = {{RESULT_OPTIMUM_X}}$ with $f(x^\ast) = {{RESULT_OPTIMUM_F}}$ for the configured $(A,b)$.
-
-**Keywords:** {{CONFIG_KEYWORDS}}
+Everything computes deterministically — no random draws, no external calls — so
+the remount is reproducible to the byte on Python {{PYTHON_VERSION}} (generated
+{{GENERATION_TIMESTAMP}}).

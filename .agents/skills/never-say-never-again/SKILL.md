@@ -1,53 +1,63 @@
 ---
 name: never-say-never-again
-description: Code-centric optimization research exemplar — gradient descent, convergence analysis, automated figures, dashboard, and publication-quality PDF.
-version: 0.1.0
+description: BOND film package (codename REMOUNT) — legacy mission replay, op diff, remastered-intel migration.
+version: 1.0.0
 author: docxology
 license: MIT
-tags: [exemplar, code, optimization, thin-orchestrator]
+tags: [bond, film, remount, mission-replay, op-diff, asset-migration]
 ---
 
-# never-say-never-again
+# never-say-never-again (REMOUNT)
 
-Project-scoped skill for the in-repo exemplar at
-`projects/working/bond/never_say_never_again/`. Load this when working inside the project.
+Project-scoped skill for the BOND film package at
+`projects/working/bond/never_say_never_again/`. Load this when working inside
+the project.
 
 ## When to Use
 
-- Working inside the `never_say_never_again` exemplar — running scripts, editing source,
-  or regenerating outputs.
-- Forking this exemplar as the starting scaffold for a new research project.
-- Validating that the exemplar's contracts (thin-orchestrator, layer boundaries,
-  no-mocks testing) still hold after changes.
+- Working inside the `never_say_never_again` package — running the mission
+  CLIs, editing `src/`, or regenerating manuscript variables / figures.
+- Implementing or auditing the frozen `bond_api.MissionProvider` adapter
+  (`src/never_say_never_again/mission.py`).
+- Verifying the layer contract (pure domain core vs protocol adapter),
+  no-mocks testing, and determinism.
 
 ## Quick Reference
 
 ```bash
-# From the repository root
-uv run pytest projects/working/bond/never_say_never_again/tests --cov=projects/working/bond/never_say_never_again/src --cov-fail-under=90
-uv run python scripts/pipeline/stage_02_analysis.py --project templates/never_say_never_again
-uv run python scripts/pipeline/stage_03_render.py --project templates/never_say_never_again
-uv run python scripts/pipeline/stage_04_validate.py --project templates/never_say_never_again
-uv run python scripts/pipeline/stage_05_copy.py --project templates/never_say_never_again
+# From the package directory
+uv sync --extra dev
+uv run python scripts/run_mission.py                  # full five-stage mission
+uv run python scripts/z_generate_manuscript_variables.py   # tokens + figures
+uv run pytest tests/ --cov=src --cov-fail-under=90
+uv run ruff check src/ scripts/ tests/ && uv run ruff format src/ scripts/ tests/
+uv run mypy src/ scripts/
 ```
+
+## Concepts
+
+- `mission_replay.py` — `ReplayEngine` runs a `Scenario` (THUNDERBALL-65) under
+  a `RemountConfig`; Logistic success model; weighted `command_score`.
+- `op_diff.py` — `diff_outcomes` compares original vs remount (per-objective
+  verdicts + weighted aggregate).
+- `legacy_assets.py` — SHA-256 fingerprinting, tamper detection, `remaster`,
+  `AssetCatalog` batch migration.
+- `mission.py` — the thin `bond_api.MissionProvider` adapter + gadgets.
 
 ## Pitfalls
 
-- **Keep scripts thin.** Business logic belongs in `src/` or shared
-  `infrastructure/`, not in `scripts/`.
-- **No mocks.** All tests must use real data, real files, and real
-  computation.
-- **Outputs are disposable.** Never hand-edit `output/` — regenerate from
-  source and config.
-- **Keep tracked benchmarks deterministic.** Serialize reproducible inputs,
-  objective values, and checks; keep wall-clock timing as a runtime-only
-  diagnostic.
-- **Run from the repo root.** Commands assume the template monorepo root
-  as working directory unless the child `AGENTS.md` states otherwise.
+- **Keep the core pure.** `mission_replay.py`, `op_diff.py`,
+  `legacy_assets.py` must import neither `bond_api` nor `infrastructure`.
+- **No mocks.** Determinism replaces the mock framework; real data only.
+- **Outputs are disposable.** `output/` is git-ignored; never hand-edit it.
+- **Manuscript metrics are tokens.** Never hand-author a computed number in a
+  prose section; inject it as `{{TOKEN}}`.
+- **Lineage grep.** Use `rg "template[_]code_project"` (bracket-split) so a
+  doc describing the verification cannot trip its own gate.
+- **Local-only.** No remote, never push.
 
 ## Cross-refs
 
 - Project contract: [`AGENTS.md`](../../../AGENTS.md)
 - README: [`README.md`](../../../README.md)
 - TODO: [`TODO.md`](../../../TODO.md)
-- Exemplar roster: [`projects/AGENTS.md`](../../../../../AGENTS.md)

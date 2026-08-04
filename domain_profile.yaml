@@ -1,49 +1,27 @@
-domain: code_research
-display_name: Code Research Exemplar
-required_packages:
-  - numpy
-  - matplotlib
-  - pytest
-preferred_outputs:
-  - pdf
-  - html
-  - docx
-  - epub
-validation_gates:
-  - experiment_method_design
-  - artifact_manifest
-  - evidence_grounding
-  - render_validation
-  - publication_readiness
-figure_types:
-  - convergence_plot
-  - performance_benchmark
-  - sensitivity_analysis
-citation_policy: official_or_scholarly
-source_policy: "Prefer primary project outputs, official package documentation, and scholarly optimization references."
+# Domain profile — never_say_never_again (REMOUNT)
+# Declarative advisory controls. Validation inputs only; do not execute agents.
+domain: "legacy mission replay / op diff / asset migration"
+film: "never_say_never_again"
+codename: "REMOUNT"
+
 review_gates:
-  - experiment_method_design
-  - render_validation
-  - publication_readiness
+  - "pytest --cov=src --cov-fail-under=90"
+  - "ruff check src/ scripts/ tests/"
+  - "mypy src/ scripts/"
+  - "rg template[_]code_project == zero"
+
+source_policy:
+  - "pure deterministic math: no random draws, no wall-clock in artifacts"
+  - "no mock framework; real data + computation only"
+  - "domain core imports neither bond_api nor infrastructure"
+
 artifact_expectations:
-  - output/data/manuscript_variables.json
-  - output/data/optimization_results.csv
-  - output/figures/convergence_plot.png
-  - output/reports/validation_report.json
-  - output/pdf/template_code_project_combined.pdf
+  - "output/figures/op_diff_scores.png"
+  - "output/figures/asset_distribution.png"
+  - "output/data/manuscript_variables.json"
+  - "output/data/remount_outcome.json"
+
 benchmark_rubric:
-  name: code-research-readiness
-  dimensions:
-    - name: output_validity
-      weight: 1.0
-    - name: reproducibility_bundle
-      weight: 1.0
-    - name: artifact_manifest
-      weight: 1.0
-    - name: evidence_grounding
-      weight: 2.0
-    - name: render_success
-      weight: 1.0
-    - name: publication_readiness
-      weight: 1.0
-llm_prompt_guidance: "Use generated optimization artifacts and manuscript variables as the evidence source; do not invent numeric results."
+  - "command_score improves original -> remount"
+  - "weighted delta sign determines overall verdict"
+  - "asset migration preserves integrity fingerprints"

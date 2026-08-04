@@ -1,82 +1,33 @@
-# src/ - Project Logic
+# src/ README — REMOUNT
 
-Core optimization algorithms, shared experiment configuration, analysis builders, figure generators, dashboard payloads, and manuscript-variable extraction for the code exemplar. Mathematical primitives stay pure; generated-output workflows live in importable modules so scripts remain thin wrappers.
+This package builds a deterministic **legacy mission remount**: replay a prior
+operation, diff original vs remount outcomes, migrate the intelligence.
 
-## Quick Start
-
-```python
-import logging
-
-import numpy as np
-from optimizer import gradient_descent, quadratic_function
-
-logger = logging.getLogger(__name__)
-
-# Simple optimization example
-result = gradient_descent(
-    initial_point=np.array([0.0]),
-    objective_func=lambda x: quadratic_function(x),
-    gradient_func=lambda x: x - 1,  # Gradient of f(x) = 0.5*x^2 - x
-    step_size=0.1
-)
-
-logger.info(f"Optimal solution: {result.solution}")
-```
-
-## Key Features
-
-- **Gradient descent** optimization algorithm
-- **Quadratic function** evaluation, gradients, and analytical optimum (`quadratic_optimum`)
-- **Shared experiment config** in `experiment_config.py` (single loader for `manuscript/config.yaml`)
-- **Importable analysis pipeline** in `analysis/`
-- **Matplotlib figures** in `figures/`
-- **Plotly dashboard builder** in `dashboard.py`
-- **Manuscript `{{TOKEN}}` map** in `manuscript_variables.py`
-- **API reference builder** in `documentation.py` (invoked by `scripts/generate_api_docs.py`)
-- **Reproducible results** with deterministic behavior
-- **Type-safe** with type hints
-
-## Common Commands
-
-### Import and Use
+## Canvas
 
 ```python
-from experiment_config import load_experiment_config
-from optimizer import (
-    gradient_descent,
-    quadratic_function,
-    compute_gradient,
-    quadratic_optimum,
-    OptimizationResult,
+from never_say_never_again.mission_replay import (
+    LEGACY_SCENARIO,
+    REMOUNT_CONFIG,
+    ReplayEngine,
+    RemountConfig,
 )
+from never_say_never_again.op_diff import diff_outcomes
 
-cfg = load_experiment_config()
-x_star, f_star = quadratic_optimum(cfg.A_array(), cfg.b_array())
+engine = ReplayEngine()
+original = engine.replay(LEGACY_SCENARIO, RemountConfig(intel_bonus=0.0))
+remount = engine.replay(LEGACY_SCENARIO, REMOUNT_CONFIG)
+print(remount.command_score)
+print(diff_outcomes(original, remount).overall)  # 'improved'
 ```
 
-### Run Tests
+## Mission provider
 
-```bash
-cd projects/working/bond/never_say_never_again
-uv run pytest tests/ --cov=src --cov-fail-under=90
-```
+`mission.py` implements the frozen `bond_api.MissionProvider` protocol
+(`brief`, `recon`, `plan`, `execute`, `debrief`) and registers gadgets
+(`engine`, `legacy_scenario`, `remount_config`) with a `GadgetRegistry`.
 
-## Architecture
+## Determinism
 
-```mermaid
-graph TD
-    YAML[manuscript/config.yaml] --> CFG[experiment_config.py]
-    CFG --> ANA[analysis/]
-    CFG --> FIG[figures/]
-    CFG --> DASH[dashboard.py]
-    CFG --> VARS[manuscript_variables.py]
-
-    ANA --> OPT[optimizer.py]
-    FIG --> OPT
-    DASH --> OPT
-    VARS --> OPT
-```
-
-## More Information
-
-See [AGENTS.md](AGENTS.md) for technical documentation.
+Everything is deterministic: fixed seed, no random draws, no wall-clock in
+artifacts. `figures.py` renders byte-identical PNGs on re-run.

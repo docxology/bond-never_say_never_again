@@ -1,10 +1,10 @@
-# References {#sec:references}
+# References
 
-Bibliography lives in [`manuscript/references.bib`](references.bib) and is read by Pandoc during PDF render. The build pipeline invokes Pandoc with `--natbib`, so every `[@key]` citation in the manuscript is rewritten to the appropriate `\cite{}`/`\citep{}`/`\citet{}` LaTeX command and resolved against the bib file.
-
-To validate that `references.bib` is syntactically clean and contains the required fields per entry type:
-
-```bash
-uv run python -m infrastructure.reference.citation.cli validate \
-    projects/working/bond/never_say_never_again/manuscript/references.bib --strict
-```
+1. Friedman, D. A. (2026). *BOND-API: The Frozen Mission Protocol Contract for
+   the BOND Film Suite.* BOND Suite Technical Series. Local working tree
+   (`projects/working/bond/bond-api`), no remote.
+2. Friedman, D. A. (2026). *BOND-Utilities (Q-BRANCH): Layer 0 Foundation.*
+   BOND Suite Technical Series. Local working tree
+   (`projects/working/bond/bond-utilities`), no remote.
+3. *Never Say Never Again* (1983). Directed by Irvin Kershner. Warner Bros. —
+   the film whose remount-of-Thunderball premise motivates this package.

@@ -1,5 +1,30 @@
-# Code-centric exemplar: optional monorepo adapters only.
-allow_infrastructure_imports:
-  - src/analysis/_infra.py
-  - src/_runtime.py
-  - src/benchmark_support.py
+# Layer contract — never_say_never_again (REMOUNT)
+# Manifests the BOND suite layer contract for this film package.
+version: 0.1.0
+
+surfaces:
+  - path: "src/never_say_never_again/mission_replay.py"
+    role: "mathematical core"
+    purity: "pure; no bond_api, no infrastructure imports"
+  - path: "src/never_say_never_again/op_diff.py"
+    role: "mathematical core"
+    purity: "pure; no bond_api, no infrastructure imports"
+  - path: "src/never_say_never_again/legacy_assets.py"
+    role: "mathematical core"
+    purity: "pure; no bond_api, no infrastructure imports"
+  - path: "src/never_say_never_again/mission.py"
+    role: "thin bond_api adapter"
+    purity: "implements the frozen MissionProvider protocol; registers gadgets"
+  - path: "src/never_say_never_again/manuscript_variables.py"
+    role: "token hydration"
+    purity: "reads manuscript/config.yaml + domain surface"
+  - path: "src/never_say_never_again/figures.py"
+    role: "rendering"
+    purity: "deterministic matplotlib (Agg) to output/figures/"
+  - path: "scripts/"
+    role: "thin orchestrators"
+    purity: "may import the package and bond_api"
+
+live_counts:
+  link: "../../../docs/_generated/COUNTS.md"
+  rule: "do not hardcode measured test totals or coverage %"

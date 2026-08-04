@@ -1,1 +1,1 @@
-"""Thin orchestrator scripts for never_say_never_again."""
+"""Package marker for REMOUNT thin orchestrators."""
