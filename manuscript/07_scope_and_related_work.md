@@ -19,8 +19,10 @@ here; the integration points where it would replace in-package code are named
 explicitly in `TODO.md` rather than assumed.
 
 Outside the suite, the models are standard and cited rather than invented. The
-allocation greedy is Nemhauser, Wolsey and Fisher's submodular maximization
-result [@nemhauser1978submodular]; the rehearsal model is the Wright learning
+allocation greedy is the separable-concave special case of Nemhauser, Wolsey
+and Fisher's submodular maximization setting [@nemhauser1978submodular], where
+the greedy is exactly optimal rather than `(1 - 1/e)`-approximate; the
+rehearsal model is the Wright learning
 curve [@wright1936learning]; the mission-success structure is a reliability
 block diagram in the sense of Barlow and Proschan [@barlow1975reliability],
 with detection as a homogeneous Poisson process [@ross2019probability]; the

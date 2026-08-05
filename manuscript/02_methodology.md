@@ -65,13 +65,33 @@ campaign.
 
 ## Asset allocation (marginal gain)
 
-`asset_allocator.py` spends scarce remastered assets. Each objective has a
-concave improvement curve `cap * (1 - exp(-e * k))` in the number `k` of
-assigned assets — strictly diminishing returns, hence submodular. A
-deterministic greedy allocates each of the `budget` assets to the objective
-with the largest capped marginal gain (ties broken by objective order),
-achieving the canonical `(1 - 1/e)` approximation of
-Nemhauser–Wolsey–Fisher [@nemhauser1978submodular].
+`asset_allocator.py` spends scarce remastered assets. The allocatable
+objectives are *derived*, not re-declared: each takes its `objective_id` and
+`weight` from the canonical scenario and its `base_score` from that objective's
+real score in the remount replay. Only two numbers per objective are stipulated
+model inputs — the improvement `cap` an asset can ultimately buy and the
+efficiency `e` at which returns diminish — and no operational data calibrates
+them. Because the base scores are replay scores and the scenario's weights sum
+to one, the plan's weighted total is the replay's command score, and the gains
+below are in command-score units rather than in a unit of their own.
+
+Each objective has a concave improvement curve `cap * (1 - exp(-e * k))` in the
+number `k` of assigned assets — strictly diminishing returns. A deterministic
+greedy allocates each of the `budget` assets to the objective with the largest
+**weight-scaled** capped marginal gain — the marginal increase in the weighted
+score the plan actually reports — with ties broken by objective order.
+Selecting on the unweighted gain instead maximizes a different function than
+the one reported; that was a real defect in this module, and the test suite now
+carries the wrong variant as a negative control.
+
+The guarantee: the objective is a weighted sum of per-objective concave curves
+in that objective's own asset count, which is the separable-concave special
+case of monotone submodular maximization. There greedy incremental allocation
+is not merely within the `(1 - 1/e)` factor that Nemhauser–Wolsey–Fisher
+[@nemhauser1978submodular] guarantee in general — it is *exactly optimal*.
+`tests/test_asset_allocator.py` verifies that on the canonical pool by
+enumerating every way to split the budget across the objectives and comparing
+against the maximum, and shows the unweighted variant failing the same check.
 
 ## Replay learning curve
 

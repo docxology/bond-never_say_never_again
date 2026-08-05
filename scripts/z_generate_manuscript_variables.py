@@ -7,8 +7,9 @@ Usage:
 Strict by default: unresolved {{TOKEN}}s in a numbered prose section fail the
 run. ``--allow-draft`` writes the resolved tree anyway (intentional early
 drafts only). Writes ``output/data/manuscript_variables.json``, the resolved
-tree under ``output/manuscript/``, and two deterministic figures under
-``output/figures/``.
+tree under ``output/manuscript/``, and four deterministic figures under
+``output/figures/``: ``op_diff_scores.png``, ``learning_curve.png``,
+``asset_allocation.png``, and ``asset_distribution.png``.
 """
 
 from __future__ import annotations

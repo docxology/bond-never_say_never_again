@@ -24,8 +24,9 @@ print(diff_outcomes(original, remount).overall)  # 'improved'
 ## Mission provider
 
 `mission.py` implements the frozen `bond_api.MissionProvider` protocol
-(`brief`, `recon`, `plan`, `execute`, `debrief`) and registers gadgets
-(`engine`, `legacy_scenario`, `remount_config`) with a `GadgetRegistry`.
+(`brief`, `recon`, `plan`, `execute`, `debrief`) and registers six gadgets with
+a `GadgetRegistry`: `engine`, `legacy_scenario`, `remount_config`,
+`remount_risk_report`, `allocation_plan`, and `learning_forecast`.
 
 ## Determinism
 

@@ -3,8 +3,14 @@
 Remastered assets (captured gadgets, refined intel dossiers) are scarce: the
 remount can deploy only ``budget`` assets across its objectives. This module
 allocates them greedily by *marginal gain* — the canonical submodular
-maximization heuristic of Nemhauser–Wolsey–Fisher (1978), which guarantees a
-``(1 - 1/e)`` approximation for monotone submodular objectives.
+maximization heuristic of Nemhauser–Wolsey–Fisher (1978), whose general
+guarantee is a ``(1 - 1/e)`` approximation for monotone submodular objectives.
+The problem here is the easier separable-concave special case (the objective is
+a weighted sum of per-objective concave curves in the assets assigned to that
+objective), where greedy incremental allocation is not merely within a factor
+but *exactly optimal*. ``tests/test_asset_allocator.py`` confirms that by
+exhaustive enumeration on the canonical pool rather than resting on the
+citation.
 
 * :func:`improvement_curve` — concave (diminishing-returns) improvement of an
   objective's score with ``k`` assigned assets: ``cap * (1 - exp(-e * k))``.
@@ -17,8 +23,12 @@ maximization heuristic of Nemhauser–Wolsey–Fisher (1978), which guarantees a
   function and forfeits the guarantee.
 * :class:`AllocationPlan` — assignments, per-asset marginal gains, final
   weighted score, and the gain ratio vs full saturation.
+* :func:`build_allocation_pool` — derives the allocatable objectives from a
+  scenario and one of its replays, so ids, weights, and base scores are never
+  re-declared here.
 
-The module is pure (stdlib only) and fully deterministic.
+The module is deterministic and depends only on the stdlib plus the pure
+:mod:`~never_say_never_again.mission_replay` core.
 """
 
 from __future__ import annotations
@@ -26,12 +36,22 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from never_say_never_again.mission_replay import (
+    LEGACY_SCENARIO,
+    REMOUNT_CONFIG,
+    RemountConfig,
+    ReplayEngine,
+    Scenario,
+)
+
 __all__ = [
     "ALLOCATION_BUDGET",
+    "ALLOCATION_CURVES",
     "ALLOCATION_POOL",
     "AllocatableObjective",
     "AllocationPlan",
     "allocate",
+    "build_allocation_pool",
     "canonical_allocation",
     "improvement_curve",
     "marginal_gain",
@@ -130,10 +150,11 @@ def _weighted_marginal(objective: AllocatableObjective, assets: int) -> float:
     gain — not the raw score gain.
 
     This distinction is load-bearing, not cosmetic. Selecting on the unweighted
-    marginal maximizes the wrong function: on the canonical pool it produced a
-    plan strictly worse than a naive uniform spread, while still reporting a
-    ``(1 - 1/e)`` guarantee that only holds for the function actually being
-    maximized. ``tests/test_asset_allocator.py`` pins the comparison.
+    marginal maximizes the wrong function: on the canonical pool it produces a
+    plan strictly worse than this one — and worse than the exhaustive optimum —
+    while still claiming an optimality guarantee that only holds for the
+    function actually being maximized. ``tests/test_asset_allocator.py`` pins
+    that comparison as the negative control for the optimality gate.
     """
     return objective.weight * _capped_marginal(objective, assets)
 
@@ -231,37 +252,73 @@ def allocate(
     )
 
 
-#: Canonical allocatable objectives (mirrors the THUNDERBALL-65 objective set).
-ALLOCATION_POOL: tuple[AllocatableObjective, ...] = (
-    AllocatableObjective(
-        objective_id="recover_weapons",
-        weight=0.35,
-        base_score=0.42,
-        improvement_cap=0.30,
-        efficiency=1.2,
-    ),
-    AllocatableObjective(
-        objective_id="neutralize_cell",
-        weight=0.30,
-        base_score=0.40,
-        improvement_cap=0.35,
-        efficiency=1.0,
-    ),
-    AllocatableObjective(
-        objective_id="extract_agent",
-        weight=0.20,
-        base_score=0.45,
-        improvement_cap=0.25,
-        efficiency=1.4,
-    ),
-    AllocatableObjective(
-        objective_id="deny_blackmail",
-        weight=0.15,
-        base_score=0.38,
-        improvement_cap=0.40,
-        efficiency=0.8,
-    ),
-)
+#: Per-objective allocation-curve parameters, ``objective_id -> (cap,
+#: efficiency)``. These two numbers are *stipulated model inputs*: how much a
+#: remastered asset can ultimately buy on an objective, and how fast those
+#: returns diminish. No operational data calibrates them.
+#:
+#: What is deliberately NOT declared here: objective ids, weights, and base
+#: scores. Those are derived in :func:`build_allocation_pool` from the
+#: canonical scenario and its remount replay. An earlier version re-declared
+#: all of them alongside the scenario's own copies, with nothing binding the
+#: two sets — a silent-drift hazard, and the reason the manuscript's claim that
+#: allocation gains are in units of weighted command score was unsupported.
+ALLOCATION_CURVES: dict[str, tuple[float, float]] = {
+    "recover_weapons": (0.30, 1.2),
+    "neutralize_cell": (0.35, 1.0),
+    "extract_agent": (0.25, 1.4),
+    "deny_blackmail": (0.40, 0.8),
+}
+
+
+def build_allocation_pool(
+    scenario: Scenario = LEGACY_SCENARIO,
+    config: RemountConfig = REMOUNT_CONFIG,
+    *,
+    engine: ReplayEngine | None = None,
+    curves: dict[str, tuple[float, float]] | None = None,
+) -> tuple[AllocatableObjective, ...]:
+    """Derive allocatable objectives from a scenario and one of its replays.
+
+    Each objective keeps the scenario's ``objective_id`` and ``weight``, and
+    takes as its ``base_score`` the score that objective actually achieves when
+    ``scenario`` is replayed under ``config``. Only the improvement cap and
+    efficiency come from ``curves``.
+
+    Because the base scores are real replay scores, the plan's weighted totals
+    are in the same units as :attr:`~.mission_replay.ReplayResult.command_score`
+    (exactly equal to it whenever the scenario's weights sum to one, which
+    ``tests/test_asset_allocator.py`` pins for the canonical scenario).
+
+    Raises:
+        ValueError: if any scenario objective has no declared curve.
+    """
+    curves = ALLOCATION_CURVES if curves is None else curves
+    engine = engine if engine is not None else ReplayEngine()
+    result = engine.replay(scenario, config)
+    scores = {outcome.objective_id: outcome.score for outcome in result.outcomes}
+    missing = [
+        spec.objective_id
+        for spec in scenario.objectives
+        if spec.objective_id not in curves
+    ]
+    if missing:
+        raise ValueError(f"no allocation curve declared for objectives: {missing}")
+    return tuple(
+        AllocatableObjective(
+            objective_id=spec.objective_id,
+            weight=spec.weight,
+            base_score=scores[spec.objective_id],
+            improvement_cap=curves[spec.objective_id][0],
+            efficiency=curves[spec.objective_id][1],
+        )
+        for spec in scenario.objectives
+    )
+
+
+#: Canonical allocatable objectives — derived from THUNDERBALL-65 replayed
+#: under ``REMOUNT_CONFIG``, never re-declared.
+ALLOCATION_POOL: tuple[AllocatableObjective, ...] = build_allocation_pool()
 
 #: Canonical asset budget for the remount.
 ALLOCATION_BUDGET = 6

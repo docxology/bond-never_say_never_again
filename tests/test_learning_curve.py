@@ -12,7 +12,9 @@ import math
 import pytest
 
 from never_say_never_again.learning_curve import (
+    LEARNING_BONUS_CAP,
     LEARNING_ITERATIONS,
+    LEARNING_RATE,
     LearningReplayForecast,
     canonical_learning_forecast,
     exponential_learning,
@@ -126,8 +128,25 @@ def test_canonical_learning_forecast_values():
     assert forecast.final_score > forecast.initial_score
     assert forecast.delta > 0.0
     assert forecast.target_iteration == 3
-    # Scores rise toward the asymptote but remain below the capped replay score.
-    assert forecast.scores[-1] < forecast.final_score + 0.3
+
+    # Scores rise toward the asymptote but stay strictly below it. The
+    # asymptote is recomputed here from a *second real replay* under the capped
+    # config — not read off the forecast — so this compares two independently
+    # produced numbers. (The previous version of this assertion compared
+    # `scores[-1]` to `final_score + 0.3`; since `final_score` IS `scores[-1]`,
+    # it was `x < x + 0.3` and could not fail.)
+    asymptote = (
+        ReplayEngine()
+        .replay(LEGACY_SCENARIO, RemountConfig(intel_bonus=LEARNING_BONUS_CAP))
+        .command_score
+    )
+    assert forecast.scores[-1] < asymptote
+    # ...and has closed most of the gap by the final iteration: the residual is
+    # exp(-rate * iterations) of the initial gap, which pins the curve's shape.
+    residual = (asymptote - forecast.initial_score) * math.exp(
+        -LEARNING_RATE * LEARNING_ITERATIONS
+    )
+    assert asymptote - forecast.scores[-1] == pytest.approx(residual)
 
 
 def test_canonical_learning_forecast_is_deterministic():

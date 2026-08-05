@@ -68,12 +68,22 @@ deploys {{ALLOC_ASSETS_USED}} of them — it stops early if every objective
 saturates — and recovers {{ALLOC_TOTAL_GAIN}} of weighted command score, i.e.
 {{ALLOC_GAIN_RATIO}} of the full-saturation ceiling.
 
+That figure is in genuine command-score units: the allocatable objectives carry
+the scenario's own ids and weights, and each one's zero-asset base score *is*
+its score in the remount replay reported above, so the plan's zero-asset
+baseline is the remount command score {{REMOUNT_COMMAND_SCORE}} — displayed
+here rounded, asserted at full precision in `tests/test_asset_allocator.py`
+rather than left to the reader. What the allocation model stipulates, and what
+no data here calibrates, is the pair of curve parameters per objective — how
+much an asset can ultimately buy and how fast the returns diminish.
+
 Because each objective's improvement curve is concave, the sequence of realized
 marginal gains is non-increasing: the greedy spends its first asset where the
-slope is steepest and each later asset buys strictly less. That non-increasing
-property is what licenses the `(1 - 1/e)` guarantee cited in the methodology,
-and it is asserted directly over the returned gain sequence in
-`tests/test_asset_allocator.py`.
+slope is steepest and each later asset buys strictly less. For this
+separable-concave objective that makes the greedy exactly optimal, not merely
+within the `(1 - 1/e)` factor of the general submodular bound — checked in
+`tests/test_asset_allocator.py` against the maximum over every feasible split
+of the budget, with the unweighted-selection variant failing the same check.
 
 ![Marginal-gain asset allocation](figures/asset_allocation.png)
 

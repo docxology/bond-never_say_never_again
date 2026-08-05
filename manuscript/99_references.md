@@ -9,8 +9,10 @@ that the code does not implement.
 
 1. Nemhauser, G. L., Wolsey, L. A., & Fisher, M. L. (1978). An Analysis of
    Approximations for Maximizing Submodular Set Functions—I. *Mathematical
-   Programming*, 14(1), 265–294. doi:10.1007/BF01588971 — the `(1 - 1/e)`
-   greedy guarantee behind `asset_allocator.py`.
+   Programming*, 14(1), 265–294. doi:10.1007/BF01588971 — the greedy
+   marginal-gain setting behind `asset_allocator.py`. Their `(1 - 1/e)` bound is
+   the general monotone-submodular case; the allocator's separable-concave
+   instance is the easier one where greedy is exactly optimal.
 2. Wright, T. P. (1936). Factors Affecting the Cost of Airplanes. *Journal of
    the Aeronautical Sciences*, 3(4), 122–128. doi:10.2514/8.155 — the learning
    curve behind `learning_curve.py`.

@@ -110,13 +110,19 @@ def test_every_prose_token_resolves_from_live_manuscript():
             )
 
 
-def test_config_yaml_mirrors_the_code_constants():
-    """`manuscript/config.yaml` documents the parameters — this proves it is honest.
+def assert_config_mirrors_the_code_constants(config: dict[str, object]) -> None:
+    """The config-mirror gate itself, runnable against *any* loaded config.
 
-    The YAML block is a mirror for human readers; the code constants are the
-    source. Without this gate the mirror could drift silently and the setup
-    section would describe a model nobody runs. Each assertion below names the
+    `manuscript/config.yaml` documents the parameters; the code constants are
+    the source. Without this gate the mirror could drift silently and the setup
+    section would describe a model nobody runs. Each assertion names the
     constant it binds to, so a mismatch says exactly which pair diverged.
+
+    This is a function rather than a test body so the negative control below can
+    run the *same* checks against a deliberately drifted config and prove they
+    fail. (The previous negative control asserted only that a YAML round-trip
+    preserved a value it had just changed — it never invoked the gate, so it
+    established nothing about the gate.)
     """
     from never_say_never_again.asset_allocator import ALLOCATION_BUDGET, ALLOCATION_POOL
     from never_say_never_again.learning_curve import (
@@ -140,7 +146,8 @@ def test_config_yaml_mirrors_the_code_constants():
         REPLAY_CAMPAIGN_LENGTH,
     )
 
-    block = load_manuscript_config()["remount"]
+    block = config["remount"]
+    assert isinstance(block, dict)
 
     assert block["scenario"] == LEGACY_SCENARIO.name
     assert block["objectives"] == len(LEGACY_SCENARIO.objectives)
@@ -169,23 +176,56 @@ def test_config_yaml_mirrors_the_code_constants():
     assert block["learning"]["target_score"] == pytest.approx(LEARNING_TARGET_SCORE)
 
 
-def test_config_mirror_gate_actually_fails_on_drift(tmp_path: Path):
-    """Negative control: the mirror gate above is not green by construction.
+def test_config_yaml_mirrors_the_code_constants():
+    """The live config must pass the mirror gate."""
+    assert_config_mirrors_the_code_constants(load_manuscript_config())
 
-    A config whose seed disagrees with the code must be detectable. If this
-    passes trivially the gate above proves nothing.
+
+#: (path into the ``remount:`` block, sentinel value) pairs. Every drifted
+#: field must be caught by the gate.
+_DRIFT_CASES = [
+    (("seed",), 999),
+    (("objectives",), 99),
+    (("legacy_assets",), 99),
+    (("scenario",), "NOT-THE-SCENARIO"),
+    (("sensitivity",), 99.0),
+    (("config", "intel_bonus"), 0.99),
+    (("risk", "detection_rate"), 0.99),
+    (("risk", "replay_campaign_length"), 999),
+    (("allocation", "budget"), 999),
+    (("learning", "rate"), 0.99),
+    (("learning", "target_score"), 0.99),
+]
+
+
+@pytest.mark.parametrize(("path", "sentinel"), _DRIFT_CASES)
+def test_config_mirror_gate_actually_fails_on_drift(
+    tmp_path: Path, path: tuple[str, ...], sentinel: object
+):
+    """Negative control: the mirror gate is not green by construction.
+
+    For each mirrored field, a config carrying a value that disagrees with the
+    code must make the *gate itself* fail. The gate is invoked here, not
+    approximated.
     """
     import yaml
 
-    from never_say_never_again.mission_replay import MISSION_SEED
+    config = load_manuscript_config()
+    block = config["remount"]
+    for key in path[:-1]:
+        block = block[key]
+    assert block[path[-1]] != sentinel, "drift sentinel must differ from the real value"
+    block[path[-1]] = sentinel
 
-    real = load_manuscript_config()
-    drifted = tmp_path / "drifted.yaml"
-    real["remount"]["seed"] = MISSION_SEED + 1
-    drifted.write_text(yaml.safe_dump(real), encoding="utf-8")
+    drifted_path = tmp_path / "drifted.yaml"
+    drifted_path.write_text(yaml.safe_dump(config), encoding="utf-8")
+    reloaded = load_manuscript_config(drifted_path)
 
-    reloaded = load_manuscript_config(drifted)
-    assert reloaded["remount"]["seed"] != MISSION_SEED
+    # Positive control: the undrifted config still passes, so the failure below
+    # is caused by the drift and not by the gate rejecting everything.
+    assert_config_mirrors_the_code_constants(load_manuscript_config())
+    with pytest.raises(AssertionError):
+        assert_config_mirrors_the_code_constants(reloaded)
 
 
 def test_load_manuscript_config_rejects_non_mapping(tmp_path: Path):

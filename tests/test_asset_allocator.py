@@ -9,21 +9,61 @@ from __future__ import annotations
 
 import itertools
 import math
+from collections.abc import Iterator
 
 import pytest
 
 from never_say_never_again.asset_allocator import (
     ALLOCATION_BUDGET,
+    ALLOCATION_CURVES,
     ALLOCATION_POOL,
     AllocatableObjective,
     AllocationPlan,
     allocate,
+    build_allocation_pool,
     canonical_allocation,
     improvement_curve,
     marginal_gain,
 )
+from never_say_never_again.mission_replay import (
+    LEGACY_SCENARIO,
+    REMOUNT_CONFIG,
+    ObjectiveSpec,
+    RemountConfig,
+    ReplayEngine,
+    Scenario,
+)
 
 TOL = 1e-9
+
+
+def _weighted_total(
+    pool: tuple[AllocatableObjective, ...], assignment: dict[str, int]
+) -> float:
+    """Weighted score of an arbitrary assignment (independent of ``allocate``)."""
+    return sum(
+        objective.weight
+        * min(
+            1.0,
+            objective.base_score
+            + improvement_curve(
+                assignment[objective.objective_id],
+                objective.improvement_cap,
+                objective.efficiency,
+            ),
+        )
+        for objective in pool
+    )
+
+
+def _compositions(total: int, parts: int) -> Iterator[tuple[int, ...]]:
+    """Every way to split ``total`` identical assets across ``parts`` objectives."""
+    if parts == 1:
+        yield (total,)
+        return
+    for first in range(total + 1):
+        for rest in _compositions(total - first, parts - 1):
+            yield (first, *rest)
 
 
 def test_improvement_curve_is_concave_diminishing():
@@ -212,11 +252,14 @@ def test_realized_marginal_gains_are_non_increasing():
     assert all(gain > 0.0 for gain in gains)
 
 
-def test_greedy_beats_a_naive_uniform_spread_on_the_canonical_pool():
+def test_greedy_is_at_least_a_naive_uniform_spread_on_the_canonical_pool():
     """A non-crippled comparator: uniform allocation is a legitimate baseline.
 
-    The greedy must actually earn its complexity. Uniform spreading is the
-    obvious alternative policy an operator would reach for, not a strawman.
+    Honest limitation: on the *current* canonical pool the greedy and the
+    uniform spread land on the same assignment, so this test is a floor, not a
+    discriminator. The discriminating gates are
+    ``test_greedy_allocation_is_exactly_optimal_by_exhaustive_search`` and its
+    negative control below.
     """
     plan = canonical_allocation()
 
@@ -225,19 +268,145 @@ def test_greedy_beats_a_naive_uniform_spread_on_the_canonical_pool():
         objective.objective_id: per_objective + (1 if idx < remainder else 0)
         for idx, objective in enumerate(ALLOCATION_POOL)
     }
-    uniform_score = sum(
-        objective.weight
-        * min(
-            1.0,
-            objective.base_score
-            + improvement_curve(
-                uniform[objective.objective_id],
-                objective.improvement_cap,
-                objective.efficiency,
-            ),
-        )
-        for objective in ALLOCATION_POOL
-    )
 
     assert sum(uniform.values()) == sum(plan.assignments.values())
-    assert plan.total_weighted_score >= uniform_score - TOL
+    assert plan.total_weighted_score >= _weighted_total(ALLOCATION_POOL, uniform) - TOL
+
+
+def test_greedy_allocation_is_exactly_optimal_by_exhaustive_search():
+    """The optimality claim, checked against every feasible allocation.
+
+    The methodology claims more than the ``(1 - 1/e)`` submodular bound: for a
+    weighted sum of per-objective concave curves, greedy incremental allocation
+    is exactly optimal. That is checked here by enumerating all splits of the
+    budget across the pool — no appeal to the citation.
+    """
+    plan = canonical_allocation()
+    ids = tuple(objective.objective_id for objective in ALLOCATION_POOL)
+
+    candidates = [
+        _weighted_total(ALLOCATION_POOL, dict(zip(ids, composition, strict=True)))
+        for composition in _compositions(ALLOCATION_BUDGET, len(ids))
+    ]
+    assert len(candidates) == math.comb(
+        ALLOCATION_BUDGET + len(ids) - 1, len(ids) - 1
+    )  # the whole feasible set, not a sample
+
+    assert plan.total_weighted_score == pytest.approx(max(candidates))
+
+
+def _greedy_on_unweighted_marginal(
+    pool: tuple[AllocatableObjective, ...], budget: int
+) -> dict[str, int]:
+    """The rejected variant: select on the raw (unweighted) capped marginal."""
+    assignment = {objective.objective_id: 0 for objective in pool}
+    for _ in range(budget):
+        best, best_gain = None, -1.0
+        for objective in pool:
+            assigned = assignment[objective.objective_id]
+            gain = min(
+                1.0,
+                objective.base_score
+                + improvement_curve(
+                    assigned + 1, objective.improvement_cap, objective.efficiency
+                ),
+            ) - min(
+                1.0,
+                objective.base_score
+                + improvement_curve(
+                    assigned, objective.improvement_cap, objective.efficiency
+                ),
+            )
+            if gain > best_gain:
+                best, best_gain = objective, gain
+        if best is None or best_gain <= 0.0:
+            break
+        assignment[best.objective_id] += 1
+    return assignment
+
+
+def test_unweighted_selection_fails_the_optimality_gate():
+    """Negative control: the optimality gate above is not green by construction.
+
+    Selecting on the unweighted marginal gain is the plausible wrong
+    implementation (and the one this module actually shipped once). It produces
+    a different, strictly worse allocation — so the gate discriminates.
+    """
+    plan = canonical_allocation()
+    rejected = _greedy_on_unweighted_marginal(ALLOCATION_POOL, ALLOCATION_BUDGET)
+
+    assert rejected != plan.assignments
+    assert sum(rejected.values()) == ALLOCATION_BUDGET
+    assert _weighted_total(ALLOCATION_POOL, rejected) < plan.total_weighted_score - TOL
+
+
+def test_pool_ids_and_weights_are_derived_from_the_scenario():
+    """The pool is not a second declaration of the objective set."""
+    assert tuple(objective.objective_id for objective in ALLOCATION_POOL) == tuple(
+        spec.objective_id for spec in LEGACY_SCENARIO.objectives
+    )
+    for objective, spec in zip(
+        ALLOCATION_POOL, LEGACY_SCENARIO.objectives, strict=True
+    ):
+        assert objective.weight == spec.weight
+
+
+def test_pool_base_scores_are_the_remount_replay_scores():
+    """Allocation gains are in weighted-command-score units — bound, not asserted.
+
+    The results section says the greedy recovers a quantity of *weighted command
+    score*. That is only true if the pool's zero-asset baseline is the remount's
+    command score. Both premises are pinned here: the weights sum to one (so the
+    weighted sum the plan reports is the weighted mean the engine reports), and
+    each base score is the objective's real remount replay score.
+    """
+    remount = ReplayEngine().replay(LEGACY_SCENARIO, REMOUNT_CONFIG)
+    scores = {outcome.objective_id: outcome.score for outcome in remount.outcomes}
+
+    assert sum(spec.weight for spec in LEGACY_SCENARIO.objectives) == pytest.approx(1.0)
+    for objective in ALLOCATION_POOL:
+        assert objective.base_score == pytest.approx(scores[objective.objective_id])
+
+    plan = canonical_allocation()
+    baseline = plan.total_weighted_score - plan.total_gain
+    assert baseline == pytest.approx(remount.command_score)
+
+
+def test_build_allocation_pool_rejects_an_objective_with_no_curve():
+    """An objective added to the scenario without a curve fails loudly."""
+    scenario = Scenario(
+        name="EXTRA",
+        objectives=(
+            *LEGACY_SCENARIO.objectives,
+            ObjectiveSpec(
+                objective_id="unlisted_objective",
+                weight=0.10,
+                difficulty=0.5,
+                baseline_intel=0.5,
+            ),
+        ),
+    )
+    with pytest.raises(ValueError, match="unlisted_objective"):
+        build_allocation_pool(scenario)
+
+
+def test_build_allocation_pool_tracks_the_config_it_is_given():
+    """A different replay config moves the base scores — the pool is derived."""
+    engine = ReplayEngine()
+    identity_config = RemountConfig(intel_bonus=0.0)
+    identity_pool = build_allocation_pool(
+        LEGACY_SCENARIO, identity_config, engine=engine
+    )
+    identity = engine.replay(LEGACY_SCENARIO, identity_config)
+    identity_scores = {o.objective_id: o.score for o in identity.outcomes}
+    for objective in identity_pool:
+        assert objective.base_score == pytest.approx(
+            identity_scores[objective.objective_id]
+        )
+    # The remount pool is strictly better off than the un-reinforced one.
+    for reinforced, plain in zip(ALLOCATION_POOL, identity_pool, strict=True):
+        assert reinforced.base_score > plain.base_score
+    # Curves are unaffected by the config.
+    for objective in identity_pool:
+        cap, efficiency = ALLOCATION_CURVES[objective.objective_id]
+        assert (objective.improvement_cap, objective.efficiency) == (cap, efficiency)

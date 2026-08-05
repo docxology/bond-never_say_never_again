@@ -104,12 +104,22 @@ number of assets `k`, so gains diminish and the objective is submodular.
 objective with the largest **weight-scaled** capped marginal gain, ties going
 to the earlier objective, stopping early once everything saturates.
 
+`build_allocation_pool` derives the allocatable objectives instead of declaring
+them: ids and weights come from the scenario, base scores from a real replay of
+it, and only the `(cap, efficiency)` pair per objective is stipulated in
+`ALLOCATION_CURVES`. That is what makes the plan's weighted totals command-score
+units. Before this, the pool re-declared the ids and weights alongside the
+scenario's own copies with nothing binding the two, and the manuscript's
+"weighted command score" wording described a quantity the allocator never
+computed.
+
 The weight scaling is the subtle part, and getting it wrong was a real defect
 found in review: the plan reports a weight-weighted score, so a greedy
 selecting on the raw score gain maximizes a different function than the one it
-reports — on the canonical pool it lost to a naive uniform spread while still
-claiming a `(1 − 1/e)` guarantee. Both the comparison against that uniform
-baseline and the non-increasing gain sequence are now asserted in the tests.
+reports. The tests now assert the greedy hits the exhaustive optimum over every
+feasible split of the budget — the separable-concave case is exactly solvable,
+so this is a stronger check than the `(1 − 1/e)` bound — and carry the
+unweighted variant as the negative control that fails it.
 
 ### `learning_curve.py` — how far rehearsal gets you
 

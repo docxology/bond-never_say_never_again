@@ -33,14 +33,29 @@ Without that, the claim is just an assertion in a paragraph.
 **Carry a positive control.** A guard that rejects bad input proves nothing
 unless it also accepts good input — otherwise a guard that rejects everything
 would pass. `test_scenario_accepts_a_valid_timeline` exists precisely to make
-the neighbouring rejection tests meaningful. Likewise
-`test_config_mirror_gate_actually_fails_on_drift` demonstrates the config gate
-*can* fail; a gate never shown to fail is decoration.
+the neighbouring rejection tests meaningful.
 
-**Use an honest comparator.** `test_greedy_beats_a_naive_uniform_spread`
-compares the allocator against uniform spreading — the policy an operator would
-actually reach for — not a deliberately crippled baseline. That comparison is
-what caught the allocator selecting on the wrong objective function.
+**Make the negative control call the real gate.** The config-mirror gate lives
+in `assert_config_mirrors_the_code_constants(config)`, a function taking the
+loaded config, so `test_config_mirror_gate_actually_fails_on_drift` can hand it
+a drifted config and require it to raise — for each mirrored field in turn,
+with the undrifted config asserted to still pass in the same test. The earlier
+version of that control was hollow: it wrote a drifted YAML and then asserted
+only that the value it had just changed differed from the constant. It never
+invoked the gate, so it demonstrated nothing about it. A gate never *shown* to
+fail is decoration, and a control that cannot detect a weakened gate is worse —
+it is decoration that reads as proof.
+
+**Use an honest comparator, and say when it stops discriminating.**
+`test_greedy_is_at_least_a_naive_uniform_spread_on_the_canonical_pool` compares
+the allocator against uniform spreading — the policy an operator would actually
+reach for, not a strawman. On the current pool the two coincide, so that test is
+now only a floor and says so in its docstring. The discriminating check is
+`test_greedy_allocation_is_exactly_optimal_by_exhaustive_search`, which
+enumerates every split of the budget and requires the greedy to hit the maximum,
+with `test_unweighted_selection_fails_the_optimality_gate` as its negative
+control: the wrong-objective variant produces a strictly worse plan and fails
+the same assertion.
 
 **Pin a fixed defect with its counterexample.** When a bug is fixed, the test
 states what the old behaviour was and demonstrates it was wrong.
@@ -77,7 +92,8 @@ honest:
 | Protocol conformance | `isinstance(provider, Protocol)` against the real frozen `bond_api` contract, plus discovery by slug | Silently breaking fleet consumers |
 | Token resolution | Every `{{TOKEN}}` in `manuscript/[0-9][0-9]_*.md` must exist in `generate_variables()`, and the resolved tree must be brace-clean | Raw braces reaching the PDF; tokens referencing nothing |
 | No hand-authored metrics | The results section is scanned for bare decimals outside code spans and tokens | Prose numbers drifting from the code |
-| Config mirror | Every value in the `config.yaml` `remount:` block is asserted equal to the constant the code runs on | Documentation describing a model nobody runs |
+| Config mirror | Every value in the `config.yaml` `remount:` block is asserted equal to the constant the code runs on, by a gate function the drift control also calls | Documentation describing a model nobody runs |
+| Allocation optimality | The greedy's weighted total must equal the maximum over every feasible split of the budget; the unweighted-selection variant must fail that same check | An optimality claim resting on a citation instead of a computation |
 | Migration agreement | The catalog, the mission outcome, and the manuscript token must report the same asset count and fingerprint | Exactly the drift that produced the migrated-asset count defect |
 
 ## Determinism and figures

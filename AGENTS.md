@@ -18,7 +18,7 @@ and Matplotlib.
 
 | Surface | Rule |
 | --- | --- |
-| `src/never_say_never_again/mission_replay.py`, `op_diff.py`, `legacy_assets.py`, `remount_risk.py`, `asset_allocator.py`, `learning_curve.py` (mathematical core) | Pure deterministic logic — **no** `bond_api`, **no** `infrastructure`, stdlib only. Enforced by `tests/test_mission_provider.py`, which reads the files. |
+| `src/never_say_never_again/mission_replay.py`, `op_diff.py`, `legacy_assets.py`, `remount_risk.py`, `asset_allocator.py`, `learning_curve.py` (mathematical core) | Pure deterministic logic — **no** `bond_api`, **no** `infrastructure`; no third-party imports, only the stdlib and other modules of this same core (`asset_allocator.py` and `learning_curve.py` import `mission_replay.py` so their canonical inputs are derived from the scenario rather than re-declared). Enforced by `tests/test_mission_provider.py`, which reads the files. |
 | `src/never_say_never_again/mission.py` | The only module importing `bond_api`. Thin adapter: implements the frozen `MissionProvider`, registers gadgets |
 | `src/never_say_never_again/manuscript_variables.py` | Hydrates `{{TOKEN}}`s from `manuscript/config.yaml` + the live domain surface |
 | `src/never_say_never_again/figures.py` | Deterministic Matplotlib (Agg) to `output/figures/` |

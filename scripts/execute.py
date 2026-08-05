@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Thin orchestrator: execute the REMOUNT mission (phase: execute).
 
-Runs the replay → diff → migrate pipeline and persists the deterministic
-outcome to ``output/data/remount_outcome.json``.
+Runs the replay → diff → migrate → risk → allocate → forecast pipeline and
+persists the deterministic outcome to ``output/data/remount_outcome.json``.
 
 Usage:
     uv run python scripts/execute.py [--out PATH]
