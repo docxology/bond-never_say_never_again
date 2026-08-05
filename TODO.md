@@ -1,69 +1,136 @@
-# never_say_never_again — TODO
+# TODO — never_say_never_again (REMOUNT)
 
-Remaining work for the REMOUNT film package. Completed work is deliberately not
-listed here; the git history and `docs/architecture.md` describe what exists.
-This file is for what is *not* done.
+`never_say_never_again` is the PROJECT BOND film package for mission codename
+**REMOUNT**: a pure, deterministic domain core (six stdlib-only modules —
+replay, op diff, asset migration, escalation risk, marginal-gain allocation,
+replay learning) behind three adapters (`mission.py` implementing the frozen
+`bond_api.MissionProvider`, `manuscript_variables.py`, `figures.py`). Verified
+state as of this file's commit, measured by a real run in this session:
+**140 tests collected, 140 passed, 0 failed, 0 skipped; 100.00 % line+branch
+coverage on `src/`** (700 statements, 158 branches, floor 90 %), with
+`ruff check`, `ruff format --check` (37 files), and `mypy src/ scripts/`
+(19 files) all clean. The seven adversarial-verifier findings recorded in
+`../output/verify/never_say_never_again.json` were all remediated in `c8f6d3a`;
+this file carries only what remains, plus the three items the remediation pass
+disclosed as unresolved.
+
+Every item below was re-checked against the tree at the commit this file lands
+in. Nothing is listed because it sounds like diligence.
 
 ## Open work
 
-### Model depth
+### Correctness
 
-- [ ] **Sensitivity analysis.** Every result is produced at a single canonical
-      parameter set, and `manuscript/07_scope_and_related_work.md` names this as
-      a limitation. Add a sweep over the parameters that most affect the
-      conclusions — success-model sensitivity `S`, `DETECTION_RATE`, and
-      `LEARNING_RATE` — and report how far the "remount improves" and "keep the
-      campaign short" conclusions hold. Acceptance: a tested `sensitivity.py`
-      module, a figure, and tokenized bounds in the results section.
-- [ ] **Optimal campaign length as a solver.** The risk model's expected value
-      falls monotonically in replay count and crosses zero, but the crossing is
-      currently located only by a test scanning integers. Expose
-      `optimal_campaign_length()` so the recommendation is a computed output of
-      the model rather than a property discovered in the suite.
-- [ ] **Objective-set mismatch reporting.** `diff_outcomes` silently skips
-      objectives present on only one side. Consider returning the unmatched ids
-      alongside the diffs so a caller can detect a mismatch without comparing
-      lengths. This changes `OpDiff`'s shape — confirm no fleet consumer reads
-      it positionally first.
-- [ ] **Scenario-aware weights.** `op_diff` recovers objective weights by
-      scenario *name*, so a caller-built scenario reusing the canonical name
-      would be diffed against canonical weights. The clean fix threads the
-      `Scenario` through `diff_outcomes`, which changes a signature fleet code
-      calls — needs coordination, not a unilateral edit.
+Nothing in `src/` is currently known to compute a wrong answer. The four items
+here are model/API shape defects — behaviour that is documented and tested as-is
+but that a caller can reasonably be surprised by. All four are also written down
+as limitations in `manuscript/07_scope_and_related_work.md`, so shipping them is
+honest; fixing them would let those limitation bullets be deleted.
 
-### Declared integration points
+| # | Item |
+| --- | --- |
+| C1 | **`diff_outcomes` silently drops one-sided objectives.** `src/never_say_never_again/op_diff.py:128-131` — `other = remount_by_id.get(...)`, `if other is None: continue`. An objective present in only one replay produces no `ObjectiveDiff` and contributes to none of the counts or means, so a caller comparing two different objective sets silently gets the intersection. The only signal is `len(diff.diffs)` being short of both outcome counts (documented at `op_diff.py:107-112`, limitation at `manuscript/07_scope_and_related_work.md:41-44`). **Done when:** `OpDiff` carries the unmatched ids (e.g. `only_original: tuple[str, ...]`, `only_remount: tuple[str, ...]`), a test asserts both are populated for a deliberately mismatched pair and empty for the canonical pair, and the `manuscript/07` bullet is deleted. `OpDiff` is a frozen dataclass consumed by `mission.py` and the manuscript hydrator — confirm no fleet consumer unpacks it positionally before changing its shape (`rg -n "OpDiff\(" ..` across the suite). **Demonstrate:** `uv run pytest tests/test_op_diff.py -v` plus `uv run python scripts/execute.py` still writing a well-formed `output/data/remount_outcome.json`. |
+| C2 | **Objective weights are recovered by scenario *name*.** `src/never_say_never_again/op_diff.py:168-191` — `_objective_specs` returns `LEGACY_SCENARIO.objectives` when `result.scenario == LEGACY_SCENARIO.name` (line 186) and unity weights otherwise. A caller-built `Scenario` reusing the string `THUNDERBALL-65` with different weights is diffed against the canonical weights, producing a `weighted_delta` for a model nobody ran. Limitation stated at `manuscript/07_scope_and_related_work.md:45-47`. **Done when:** `diff_outcomes` takes the originating `Scenario` (keyword-only with a default, so existing calls keep working) and uses its weights directly, with a test that builds a same-named scenario carrying different weights and asserts the `weighted_delta` follows the passed scenario, not the module constant. This changes a signature fleet code calls — coordinate with `bond-cli` / `bond-coordinator` / `bond-orchestrator` first; do not edit unilaterally. **Demonstrate:** `uv run pytest tests/test_op_diff.py -v` and `uv run python scripts/00_preflight.py`. |
+| C3 | **No `optimal_campaign_length()` in the risk model.** `src/never_say_never_again/remount_risk.py` exports eleven names (`__all__`, lines 29-44) and none of them locate the campaign length at which expected value crosses zero. The crossing is found only by a test scanning integers — `tests/test_remount_risk.py:217`, `crossing = next(n for n in range(1, 200) if ev(n) <= 0.0)` — so the manuscript's "keep the campaign short" recommendation is a property discovered in the suite rather than an output of the model. **Done when:** `optimal_campaign_length(*, rate, blocks, reward, penalty) -> int` exists, is exported, and `tests/test_remount_risk.py:198-224` asserts against the function instead of re-deriving the scan (keeping the scan as an independent oracle in the same test is the right shape). **Demonstrate:** `uv run pytest tests/test_remount_risk.py -v`. |
+| C4 | **The canonical `MISSION_SEED` is inert but not obviously so.** `src/never_say_never_again/mission_replay.py:47` defines `MISSION_SEED = 13`; nothing samples, so changing it cannot change a result (`AGENTS.md` "Determinism" says exactly this, and the config mirror gate pins the value). It is provenance-only by design and this is *not* a bug — but there is no test that would notice if a future contributor wired it into a code path that does branch on it. **Done when:** a test replays the canonical scenario under two different `MISSION_SEED` values (monkeypatching the module constant, the one permitted environment substitution per `docs/testing_philosophy.md`) and asserts byte-identical `ReplayResult`s. **Demonstrate:** `uv run pytest tests/test_mission_replay.py -v`. |
 
-Both are blocked on `bond-utilities` being reachable from this package. Neither
-should be worked around in-package.
+### Verification
 
-- [ ] **Provenance persistence.** Outcomes currently build their `Provenance`
-      block in-package. Acceptance: delegate persistence to
-      `bond_utilities.mission_io.record_provenance_outcome` while preserving
-      `Provenance.input_hash` semantics exactly.
-- [ ] **Signed asset chains.** `legacy_assets` is fingerprint-only: it detects
-      tampering against a declared digest but models no chain of custody, and
-      offers no protection against an attacker who rewrites content and digest
-      together. Acceptance: layer a signed-chain / integrity-registry helper
-      over `AssetCatalog` without changing its pure core.
+| # | Item |
+| --- | --- |
+| V1 | **No sensitivity analysis binds the two headline conclusions.** Every result is produced at one canonical parameter set; `manuscript/07_scope_and_related_work.md:54-55` and `manuscript/04_conclusion.md:34-40` both say so in plain terms. The three parameters the conclusions actually rest on are `DEFAULT_SENSITIVITY = 6.0` (`src/never_say_never_again/mission_replay.py:50`), `DETECTION_RATE = 0.25` (`src/never_say_never_again/remount_risk.py:47`), and `LEARNING_RATE = 0.4` (`src/never_say_never_again/learning_curve.py:45`). **Done when:** a pure `src/never_say_never_again/sensitivity.py` sweeps each parameter over a declared range and reports the sub-range over which (a) `OpDiff.overall == "improved"` and (b) the campaign-EV zero crossing stays above `REPLAY_CAMPAIGN_LENGTH = 6`; a test asserts the reported bounds; a fifth figure renders the sweep; and `manuscript/03_results.md` carries the bounds as `{{TOKEN}}`s so the limitation bullet at `07:54-55` can be narrowed rather than deleted wholesale. Keep the module stdlib-only — it belongs in the pure core, and `tests/test_mission_provider.py`'s domain-purity gate reads the core module list, which must be updated to seven. **Demonstrate:** `uv run pytest tests/ --cov=src --cov-fail-under=90` and `uv run python scripts/z_generate_manuscript_variables.py`. |
+| V2 | **The allocation-ceiling branch is no longer exercised by real data.** `_score_with` (`src/never_say_never_again/asset_allocator.py:131-137`) clamps at `1.0`. Since the pool moved to replay-derived base scores (`build_allocation_pool`, `asset_allocator.py:274-316`), every canonical objective's `base + cap` sits below 1.0, so the clamp is reached only by synthetic-objective tests, never by the shipped pool. Coverage still shows 100 % because those synthetic tests execute it — coverage is not the question here. This was disclosed by the remediation pass rather than hidden. **Done when:** either a canonical objective legitimately saturates (making the clamp load-bearing again), or a test explicitly asserts the invariant "no canonical objective's `base_score + improvement_cap` exceeds 1.0" so that a future curve change that *does* cross the ceiling has to be a deliberate, visible edit. **Demonstrate:** `uv run pytest tests/test_asset_allocator.py -v`. |
+| V3 | **The uniform-spread comparator no longer discriminates.** `tests/test_asset_allocator.py:255-273` compares the greedy against a naive uniform spread; on the current replay-derived pool the two land on the same assignment, so the test is a floor, not evidence. It is honestly labelled as such in its own docstring and in `docs/testing_philosophy.md`, and the discriminating work moved to `test_greedy_allocation_is_exactly_optimal_by_exhaustive_search` (line 276) with `test_unweighted_selection_fails_the_optimality_gate` (line 328) as its negative control. Nothing is currently overclaimed. **Done when:** the uniform comparator is either evaluated on a pool where it *does* differ (proving it can fail) or deleted as redundant with the exhaustive gate — a comparator that cannot distinguish the two policies buys nothing. **Demonstrate:** `uv run pytest tests/test_asset_allocator.py -v`. |
 
 ### Documentation
 
-- [ ] **Generate `docs/_generated/COUNTS.md` mechanically.** It is currently
-      updated by hand from an observed run — the one manual transcription step
-      left in a package that distrusts exactly that everywhere else. Acceptance:
-      a script parsing real coverage output and rewriting the file, so the
-      counts can be neither stale nor invented.
+| # | Item |
+| --- | --- |
+| D1 | **`docs/_generated/COUNTS.md` is transcribed by hand.** The file's own header admits it: "transcribed from a real `pytest --cov` run whose output was read". It is the one manual transcription step left in a package whose entire testing philosophy is that hand-copied numbers drift. It is accurate today (140 / 100.00 % — re-measured this session), which is exactly when it is cheapest to automate. **Done when:** `scripts/z_generate_counts.py` parses real `pytest --cov` output (or `coverage json`) and rewrites the file, and a test asserts the committed file matches a freshly generated one. **Demonstrate:** `uv run python scripts/z_generate_counts.py && git diff --exit-code docs/_generated/COUNTS.md`. |
+| D2 | **`scripts/AGENTS.md` row descriptions are unverified against their scripts.** The remediation pass could not confirm what verifier finding 7(b) ("two stale script descriptions") referred to — the finding's summary is truncated mid-sentence in `../output/verify/never_say_never_again.json`. Every row of the table in `scripts/AGENTS.md` was audited by hand against its script and only `execute.py`'s pipeline description was found stale (fixed in `c8f6d3a`). If 7(b) meant a different row, it is still open and nobody knows which. **Done when:** a test reads each script's module docstring and asserts the `scripts/AGENTS.md` table row for that script is consistent with it — turning a hand audit into a gate, which is the only way this closes permanently. **Demonstrate:** `uv run pytest tests/test_scripts_smoke.py -v`. |
+
+### Extension
+
+Both items below are declared integration points against Layer 0
+(`bond-utilities`). Neither should be worked around in-package.
+
+| # | Item |
+| --- | --- |
+| E1 | **Provenance persistence should delegate to `bond-utilities`.** `src/never_say_never_again/mission.py:304-309` builds its `Provenance` block in-package, hashing via the local `_mission_input_hash` (`mission.py:100`). The sibling package now ships the intended helper: `bond_utilities.mission_io.record_provenance_outcome` at `../bond-utilities/src/bond_utilities/mission_io.py:153`, exported from `bond_utilities/__init__.py:82`. The only thing blocking adoption is that `pyproject.toml` declares `bond-api` and nothing else (`dependencies`, lines 17-22; `[tool.uv.sources]`, line 36) — this is no longer blocked upstream. **Watch out:** `record_provenance_outcome` defaults `started_at` to `datetime.now(timezone.utc)`, which would break this package's determinism invariant ("no wall-clock reads in persisted artifacts", `AGENTS.md`) unless `started_at`/`now` are passed explicitly. **Done when:** `bond-utilities` is declared as a path dependency, `mission.py` delegates persistence to the helper while `Provenance.input_hash` keeps byte-identical semantics (pin the pre-change hash as a literal in a test first, then assert the post-change hash equals it), and two consecutive `scripts/execute.py` runs still produce byte-identical JSON. **Demonstrate:** `uv run pytest tests/ --cov=src --cov-fail-under=90` and `uv run python scripts/execute.py --out /tmp/a.json && uv run python scripts/execute.py --out /tmp/b.json && diff /tmp/a.json /tmp/b.json`. |
+| E2 | **Signed asset chains — genuinely blocked upstream.** `src/never_say_never_again/legacy_assets.py` is fingerprint-only: `AssetCatalog` (line 191) over `LEGACY_INDEX` (line 282) detects tampering against a declared SHA-256 digest but models no chain of custody, and offers nothing against an attacker who rewrites content and digest together. `manuscript/07_scope_and_related_work.md:48-53` states this scope honestly, including that an unscanned asset (`integrity is None`) is treated as self-consistent by design. Unlike E1 this is still blocked: `rg "def .*chain\|def .*sign" ../bond-utilities/src/bond_utilities/` returns nothing — no signing or integrity-registry helper exists to delegate to. **Done when:** `bond-utilities` ships a signed-chain / integrity-registry helper and a thin adapter layers it over `AssetCatalog` **without** changing the pure core's shape or its stdlib-only import list. **Demonstrate:** `uv run pytest tests/test_legacy_assets.py -v` plus the domain-purity gate in `tests/test_mission_provider.py` still passing. |
+
+## Known limitations (not bugs)
+
+Accepted, deliberate, and not to be re-litigated. Each is stated in the
+manuscript's own limitations section, so the package does not claim more than
+it delivers.
+
+1. **The success model is illustrative, not calibrated.** A single logistic
+   curve with a hand-chosen sensitivity (`DEFAULT_SENSITIVITY = 6.0`). No claim
+   in the manuscript is an empirical claim about real operations
+   (`manuscript/07_scope_and_related_work.md:38-40`).
+2. **All parameters are chosen, not fitted.** Detection rate, learning rate,
+   allocation caps and efficiencies, reward and penalty are stipulated model
+   inputs; `ALLOCATION_CURVES` says so at `asset_allocator.py:255-258`. V1
+   above would bound the conclusions' robustness, not make the numbers
+   empirical.
+3. **`MISSION_SEED` is provenance-only.** Nothing samples, so the seed cannot
+   change a result. It is mirrored into `manuscript/config.yaml` and gate-checked
+   purely so provenance records agree.
+4. **`wall_time_s` is fixed at `0.0`.** Read it as "not recorded", not
+   "instantaneous" — a wall-clock read would break determinism.
+5. **An unscanned asset is treated as self-consistent.** Absence of a
+   fingerprint is not evidence of integrity
+   (`manuscript/07_scope_and_related_work.md:52-53`).
+6. **100 % coverage is a floor, not evidence.** `docs/_generated/COUNTS.md`
+   records the reason first-hand: two real defects and, later, a hollow negative
+   control and a tautological assertion all lived *inside* a fully-covered
+   suite. Do not read the number as correctness.
+7. **The uniform-spread comparator currently proves only a floor** (see V3).
+   This is disclosed rather than dressed up; the discriminating gate is the
+   exhaustive-optimality search with its unweighted-selection negative control.
+8. **Local-only tree.** There is no git remote and nothing is ever pushed.
+   Scope is exactly this directory.
 
 ## Guardrails to preserve
 
-Not tasks — invariants any future change must maintain.
+Invariants, not tasks. Any change above must keep all of these true.
 
-1. Domain core stays `bond_api`- and `infrastructure`-free (six modules).
-2. No mock framework — real data and real computation only.
-3. Manuscript metrics stay `{{TOKEN}}`-injected, never hand-authored.
-4. Deterministic: no RNG, no wall-clock in persisted artifacts.
+1. The domain core stays `bond_api`- and `infrastructure`-free and stdlib-only
+   (currently six modules; V1 would make it seven — update the list read by
+   `tests/test_mission_provider.py`).
+2. No mock framework. Real data, real computation; `monkeypatch` for
+   environment isolation only.
+3. Manuscript metrics stay `{{TOKEN}}`-injected, never hand-authored in prose.
+4. Deterministic: no RNG, no wall-clock in persisted artifacts, no network.
 5. `mission.py`'s public shape is frozen: `GADGET_REGISTRY`, `MissionProvider`,
-   `film`, and the five protocol methods.
+   `film`, and the five protocol methods `brief`/`recon`/`plan`/`execute`/
+   `debrief`. Adding a module-level name is safe; renaming or removing one
+   breaks the fleet.
 6. One canonical source per constant; `manuscript/config.yaml` mirrors them and
-   the mirror is gate-checked.
-7. Local-only tree — never push, there is no remote.
+   the mirror is gate-checked by `assert_config_mirrors_the_code_constants`.
+
+## Verification
+
+Run from this directory. Read the output of each — an exit code alone is not
+evidence. If `uv` reports `Failed to initialize cache`, that is a sandbox
+restriction; rerun with the sandbox disabled.
+
+```bash
+uv sync --extra dev
+
+uv run pytest tests/ --cov=src --cov-fail-under=90
+# expect: 140 passed, 0 failed, 0 skipped; TOTAL 100.00 % on src/ (floor 90 %)
+
+uv run ruff check src/ scripts/ tests/          # expect: All checks passed!
+uv run ruff format --check src/ scripts/ tests/ # expect: 37 files already formatted
+uv run mypy src/ scripts/                       # expect: no issues in 19 source files
+
+uv run python scripts/00_preflight.py           # protocol conformance
+uv run python scripts/run_mission.py            # full five-stage flow
+uv run python scripts/z_generate_manuscript_variables.py
+# expect: 50 variables resolved (strict), four figures under output/figures/
+
+rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**'  # expect zero
+git status --short   # expect clean — output/ is git-ignored
+```
