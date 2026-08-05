@@ -9,11 +9,13 @@ from __future__ import annotations
 import pytest
 
 from never_say_never_again.legacy_assets import (
+    LEGACY_INDEX,
     AssetCatalog,
     AssetIntegrityError,
     LegacyAsset,
     MigratedAsset,
     MigrationBatch,
+    canonical_catalog,
     compute_integrity,
     remaster,
     verify,
@@ -181,3 +183,40 @@ def test_legacy_asset_validation():
         LegacyAsset(id="a", kind="intel", classification="C", content=123)  # type: ignore[arg-type]
     with pytest.raises(ValueError):
         LegacyAsset(id="a", kind="intel", classification="C", content="x", version=0)
+
+
+def test_canonical_catalog_is_the_single_source_of_the_migration():
+    """LEGACY_INDEX / canonical_catalog() are shared, stable, and non-empty.
+
+    This is the regression guard for a real defect: the manuscript's migrated
+    asset count was previously derived from the *scenario objective* count (4)
+    while the mission actually migrated the 3 dossiers in this index. Binding
+    both to one constant is what makes that class of drift impossible.
+    """
+    catalog = canonical_catalog()
+    assert len(LEGACY_INDEX) > 0
+    assert len(catalog) == len(LEGACY_INDEX)
+    assert catalog.verify_all()
+    # A fresh catalog each call, but value-identical fingerprints.
+    assert catalog is not canonical_catalog()
+    assert catalog.stable_integrity() == canonical_catalog().stable_integrity()
+
+
+def test_canonical_catalog_count_matches_the_mission_and_the_manuscript():
+    """The three consumers of the index must agree on how many assets migrate."""
+    from never_say_never_again.manuscript_variables import generate_variables
+
+    catalog = canonical_catalog()
+    batch = catalog.migrate({a.id: a.content + " [v2]" for a in catalog.assets})
+    variables = generate_variables()
+
+    assert len(batch.assets) == len(LEGACY_INDEX)
+    assert variables["MIGRATED_ASSET_COUNT"] == str(len(LEGACY_INDEX))
+    # And the manuscript fingerprint is a prefix of the real catalog digest,
+    # not a separately-derived number that merely looks like one.
+    assert catalog.stable_integrity().startswith(variables["ASSET_FINGERPRINT"])
+
+
+def test_catalog_is_iterable_in_insertion_order():
+    catalog = canonical_catalog()
+    assert [asset.id for asset in catalog] == [asset.id for asset in LEGACY_INDEX]

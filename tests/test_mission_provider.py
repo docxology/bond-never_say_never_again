@@ -24,7 +24,12 @@ from bond_api.protocol import (
     MissionProvider as Protocol,
 )
 
+from never_say_never_again.asset_allocator import (
+    ALLOCATION_BUDGET,
+    canonical_allocation,
+)
 from never_say_never_again.mission import GADGET_REGISTRY, MissionProvider
+from never_say_never_again.mission_replay import LEGACY_SCENARIO, REMOUNT_CONFIG
 
 SRC = Path(__file__).resolve().parents[1] / "src"
 
@@ -90,11 +95,20 @@ def test_execute_reports_deepened_results():
     assert results["risk_expected_operations"] == pytest.approx(4.0)
     assert 0.9 < results["mission_reliability"] < 1.0
     assert results["campaign_ev"] > 0.0
-    # Allocation (canonical: 6 assets, gain ratio ~0.78).
-    assert results["allocated_assets"] == 6
-    assert 0.6 < results["allocation_gain_ratio"] < 0.9
+    # Allocation. Bind to the canonical plan rather than to frozen literals, so
+    # a change in the allocation policy is caught as a *disagreement between
+    # the mission and the model*, not as a stale magic string in a test.
+    plan = canonical_allocation()
+    assert results["allocated_assets"] == sum(plan.assignments.values())
+    assert results["allocated_assets"] <= ALLOCATION_BUDGET
+    assert results["allocation_gain_ratio"] == pytest.approx(plan.gain_ratio)
+    assert results["allocation_total_gain"] == pytest.approx(plan.total_gain)
+    assert 0.0 < results["allocation_gain_ratio"] <= 1.0
     assert results["allocation_total_gain"] > 0.0
-    assert results["allocation_best_objective"] == "neutralize_cell"
+    # The reported "best" objective is the one holding the most assets, with
+    # ids breaking ties — recompute it rather than asserting a literal.
+    expected_best = max(plan.assignments, key=lambda oid: (plan.assignments[oid], oid))
+    assert results["allocation_best_objective"] == expected_best
     # Learning curve (canonical: target iteration 3, positive delta).
     assert results["learning_final_score"] > 0.6
     assert results["learning_delta"] > 0.0
@@ -161,3 +175,16 @@ def test_purity_domain_core_pyc_importable_standalone():
     import never_say_never_again.mission_replay
     import never_say_never_again.op_diff
     import never_say_never_again.remount_risk  # noqa: F401
+
+
+def test_engine_property_is_the_registered_gadget():
+    """The public `engine` accessor and the "engine" gadget are one object.
+
+    Two published routes to the replay engine exist — the provider property and
+    the gadget registry. If they ever returned different engines, a consumer
+    tuning one would silently not affect the other.
+    """
+    provider = MissionProvider()
+    assert provider.engine is GADGET_REGISTRY.lookup(provider.film, "engine")
+    # And it is a working engine, not just an identity match.
+    assert provider.engine.replay(LEGACY_SCENARIO, REMOUNT_CONFIG).command_score > 0.0

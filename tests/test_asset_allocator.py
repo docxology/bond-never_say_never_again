@@ -7,6 +7,7 @@ No mocks.
 
 from __future__ import annotations
 
+import itertools
 import math
 
 import pytest
@@ -195,3 +196,48 @@ def test_allocate_validation():
         allocate(ALLOCATION_POOL, -1)
     with pytest.raises(ValueError):
         allocate((object(),), 3)  # type: ignore[arg-type]
+
+
+def test_realized_marginal_gains_are_non_increasing():
+    """The submodularity claim the manuscript leans on, over the real plan.
+
+    03_results.md states the greedy's realized gain sequence is non-increasing
+    — the property that licenses the (1 - 1/e) guarantee. Assert it on the
+    canonical plan rather than only on a single objective's curve.
+    """
+    plan = canonical_allocation()
+    gains = plan.marginal_gains
+    assert len(gains) == ALLOCATION_BUDGET
+    assert all(later <= earlier + TOL for earlier, later in itertools.pairwise(gains))
+    assert all(gain > 0.0 for gain in gains)
+
+
+def test_greedy_beats_a_naive_uniform_spread_on_the_canonical_pool():
+    """A non-crippled comparator: uniform allocation is a legitimate baseline.
+
+    The greedy must actually earn its complexity. Uniform spreading is the
+    obvious alternative policy an operator would reach for, not a strawman.
+    """
+    plan = canonical_allocation()
+
+    per_objective, remainder = divmod(ALLOCATION_BUDGET, len(ALLOCATION_POOL))
+    uniform = {
+        objective.objective_id: per_objective + (1 if idx < remainder else 0)
+        for idx, objective in enumerate(ALLOCATION_POOL)
+    }
+    uniform_score = sum(
+        objective.weight
+        * min(
+            1.0,
+            objective.base_score
+            + improvement_curve(
+                uniform[objective.objective_id],
+                objective.improvement_cap,
+                objective.efficiency,
+            ),
+        )
+        for objective in ALLOCATION_POOL
+    )
+
+    assert sum(uniform.values()) == sum(plan.assignments.values())
+    assert plan.total_weighted_score >= uniform_score - TOL

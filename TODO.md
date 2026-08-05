@@ -1,72 +1,69 @@
-# never_say_never_again TODO
+# never_say_never_again — TODO
 
-Forward-only backlog for the REMOUNT film package (codename REMOUNT / REPLAY).
+Remaining work for the REMOUNT film package. Completed work is deliberately not
+listed here; the git history and `docs/architecture.md` describe what exists.
+This file is for what is *not* done.
 
-## Built (phase 4 — deep improvement)
+## Open work
 
-- **Pure domain core** extended with three new deterministic modules
-  (`src/never_say_never_again/`, stdlib-only):
-  - `remount_risk.py` — exponential detection hazard, series/parallel
-    reliability blocks, campaign expected value (`RemountRiskReport`).
-  - `asset_allocator.py` — marginal-gain (submodular greedy, Nemhauser–Wolsey–
-    Fisher) allocation of scarce remastered assets.
-  - `learning_curve.py` — exponential replay-learning forecast of command
-    score, iteration-to-target solver.
-- **mission.py** deepened inside without changing public shape: seven plan
-  steps, six gadgets (risk/allocation/learning reports added), enriched
-  outcome results + lessons; `GADGET_REGISTRY`, `film`, and the five protocol
-  methods unchanged for fleet consumers.
-- **manuscript_variables.py** adds 11 risk/allocation/learning `{{TOKEN}}`s
-  sharing the canonical factories with `mission.py`.
-- **figures.py** adds `learning_curve.png` and `asset_allocation.png`.
-- **tests** add `test_remount_risk.py`, `test_asset_allocator.py`,
-  `test_learning_curve.py` and extend the provider/figure/manuscript smoke
-  tests.
+### Model depth
 
-## Built (phase 2)
+- [ ] **Sensitivity analysis.** Every result is produced at a single canonical
+      parameter set, and `manuscript/07_scope_and_related_work.md` names this as
+      a limitation. Add a sweep over the parameters that most affect the
+      conclusions — success-model sensitivity `S`, `DETECTION_RATE`, and
+      `LEARNING_RATE` — and report how far the "remount improves" and "keep the
+      campaign short" conclusions hold. Acceptance: a tested `sensitivity.py`
+      module, a figure, and tokenized bounds in the results section.
+- [ ] **Optimal campaign length as a solver.** The risk model's expected value
+      falls monotonically in replay count and crosses zero, but the crossing is
+      currently located only by a test scanning integers. Expose
+      `optimal_campaign_length()` so the recommendation is a computed output of
+      the model rather than a property discovered in the suite.
+- [ ] **Objective-set mismatch reporting.** `diff_outcomes` silently skips
+      objectives present on only one side. Consider returning the unmatched ids
+      alongside the diffs so a caller can detect a mismatch without comparing
+      lengths. This changes `OpDiff`'s shape — confirm no fleet consumer reads
+      it positionally first.
+- [ ] **Scenario-aware weights.** `op_diff` recovers objective weights by
+      scenario *name*, so a caller-built scenario reusing the canonical name
+      would be diffed against canonical weights. The clean fix threads the
+      `Scenario` through `diff_outcomes`, which changes a signature fleet code
+      calls — needs coordination, not a unilateral edit.
 
-- **Pure domain core** (`src/never_say_never_again/`), stdlib-only:
-  - `mission_replay.py` — `ObjectiveSpec`, `Scenario`, `RemountConfig`,
-    `ReplayEngine` (deterministic Logistic success model), `ReplayResult`,
-    canonical `LEGACY_SCENARIO` (THUNDERBALL-65) + `REMOUNT_CONFIG`.
-  - `op_diff.py` — `ObjectiveDiff`, `OpDiff`, `diff_outcomes` (per-objective
-    verdicts + weighted aggregate verdict).
-  - `legacy_assets.py` — `LegacyAsset`, `verify`, `remaster`, `AssetCatalog`,
-    `MigrationBatch` (SHA-256 fingerprinting, tamper detection).
-- **Protocol adapter** — `mission.py` implements the frozen `bond_api`
-  `MissionProvider` (brief/recon/plan/execute/debrief) and registers gadgets
-  with a `GadgetRegistry`.
-- **Thin CLI scripts** — `brief.py`, `recon.py`, `plan.py`, `execute.py`,
-  `debrief.py`, `run_mission.py`, `00_preflight.py`,
-  `z_generate_manuscript_variables.py`.
-- **Manuscript + rendering** — numbered prose sections with hydrated
-  `{{TOKEN}}`s; deterministic figures (`op_diff_scores.png`,
-  `asset_distribution.png`).
+### Declared integration points
 
-## Verification (measured, phase 4)
+Both are blocked on `bond-utilities` being reachable from this package. Neither
+should be worked around in-package.
 
-- `uv run pytest tests/ --cov=src --cov-fail-under=90` — **99 passed**,
-  **98.11 %** coverage on `src/` (floor 90 %).
-- `ruff check` + `ruff format --check` clean on `src/ scripts/ tests/`.
-- `mypy src/ scripts/` — clean (19 files).
-- `rg template[_]code_project` — **zero** occurrences.
-- Because output/ is git-ignored, script smoke tests leave the tree clean.
+- [ ] **Provenance persistence.** Outcomes currently build their `Provenance`
+      block in-package. Acceptance: delegate persistence to
+      `bond_utilities.mission_io.record_provenance_outcome` while preserving
+      `Provenance.input_hash` semantics exactly.
+- [ ] **Signed asset chains.** `legacy_assets` is fingerprint-only: it detects
+      tampering against a declared digest but models no chain of custody, and
+      offers no protection against an attacker who rewrites content and digest
+      together. Acceptance: layer a signed-chain / integrity-registry helper
+      over `AssetCatalog` without changing its pure core.
 
-## Declared integration points
+### Documentation
 
-- **Provenance persistence**: outcomes carry an in-package `Provenance` block
-  computed directly. Acceptance: delegate outcome persistence to
-  `bond_utilities.mission_io.record_provenance_outcome` once `bond-utilities`
-  is reachable, keeping `Provenance.input_hash` semantics.
-- **Signed asset chains**: `legacy_assets` is fingerprint-only. Acceptance:
-  layer a signed-chain/integrity-registry helper (e.g. `bond_utilities`) over
-  `AssetCatalog` without changing its pure core.
+- [ ] **Generate `docs/_generated/COUNTS.md` mechanically.** It is currently
+      updated by hand from an observed run — the one manual transcription step
+      left in a package that distrusts exactly that everywhere else. Acceptance:
+      a script parsing real coverage output and rewriting the file, so the
+      counts can be neither stale nor invented.
 
 ## Guardrails to preserve
 
-1. Domain core stays `bond_api`- and `infrastructure`-free.
-2. No mock framework — real data + computation only.
+Not tasks — invariants any future change must maintain.
+
+1. Domain core stays `bond_api`- and `infrastructure`-free (six modules).
+2. No mock framework — real data and real computation only.
 3. Manuscript metrics stay `{{TOKEN}}`-injected, never hand-authored.
-4. Deterministic: fixed seed, no wall-clock in persisted artifacts.
-5. `mission.py` public shape is stable: `GADGET_REGISTRY`, `film`, and the five
-   protocol methods must not change for fleet consumers.
+4. Deterministic: no RNG, no wall-clock in persisted artifacts.
+5. `mission.py`'s public shape is frozen: `GADGET_REGISTRY`, `MissionProvider`,
+   `film`, and the five protocol methods.
+6. One canonical source per constant; `manuscript/config.yaml` mirrors them and
+   the mirror is gate-checked.
+7. Local-only tree — never push, there is no remote.

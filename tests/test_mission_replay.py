@@ -9,6 +9,8 @@ from __future__ import annotations
 import pytest
 
 from never_say_never_again.mission_replay import (
+    DEFAULT_SENSITIVITY,
+    DEFAULT_SUCCESS_THRESHOLD,
     LEGACY_SCENARIO,
     REMOUNT_CONFIG,
     ObjectiveSpec,
@@ -161,3 +163,54 @@ def test_validation_errors():
         ReplayEngine(sensitivity=0.0)
     with pytest.raises(ValueError):
         ReplayEngine(success_threshold=2.0)
+
+
+def test_scenario_rejects_malformed_objective_collections():
+    """Scenario validation error paths — each must fail, none may pass silently."""
+    good = ObjectiveSpec(
+        objective_id="ok", weight=1.0, difficulty=0.5, baseline_intel=0.5
+    )
+    # Not a tuple.
+    with pytest.raises(ValueError, match="non-empty tuple"):
+        Scenario(name="S", objectives=[good])  # type: ignore[arg-type]
+    # Empty tuple.
+    with pytest.raises(ValueError, match="non-empty tuple"):
+        Scenario(name="S", objectives=())
+    # Right container, wrong element type.
+    with pytest.raises(ValueError, match="ObjectiveSpec instances"):
+        Scenario(name="S", objectives=("not-a-spec",))  # type: ignore[arg-type]
+
+
+def test_scenario_rejects_bad_timeline_days():
+    good = ObjectiveSpec(
+        objective_id="ok", weight=1.0, difficulty=0.5, baseline_intel=0.5
+    )
+    for bad in (0, -1, True, 2.5):
+        with pytest.raises(ValueError, match="timeline_days"):
+            Scenario(name="S", objectives=(good,), timeline_days=bad)  # type: ignore[arg-type]
+
+
+def test_scenario_accepts_a_valid_timeline():
+    """Positive control: the guard above rejects bad input without rejecting good."""
+    good = ObjectiveSpec(
+        objective_id="ok", weight=1.0, difficulty=0.5, baseline_intel=0.5
+    )
+    assert Scenario(name="S", objectives=(good,), timeline_days=1).timeline_days == 1
+
+
+def test_mission_seed_is_a_shared_constant():
+    """The seed is sourced from the pure core, not duplicated per module."""
+    from never_say_never_again import mission_replay
+
+    assert isinstance(mission_replay.MISSION_SEED, int)
+    assert not isinstance(mission_replay.MISSION_SEED, bool)
+
+
+def test_engine_defaults_come_from_the_module_constants():
+    engine = ReplayEngine()
+    tuned = ReplayEngine(
+        sensitivity=DEFAULT_SENSITIVITY, success_threshold=DEFAULT_SUCCESS_THRESHOLD
+    )
+    result_a = engine.replay(LEGACY_SCENARIO, REMOUNT_CONFIG)
+    result_b = tuned.replay(LEGACY_SCENARIO, REMOUNT_CONFIG)
+    assert result_a == result_b

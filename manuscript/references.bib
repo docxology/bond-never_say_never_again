@@ -1,19 +1,29 @@
-@article{bond_api,
-  author  = {Friedman, Daniel Ari},
-  title   = {BOND-API: The Frozen Mission Protocol Contract for the BOND Film Suite},
-  journal = {BOND Suite Technical Series},
-  year    = {2026},
-  note    = {Local working tree, no remote},
+% References for Never Say Never Again: REMOUNT.
+%
+% Rule for this file: every entry must be a real, checkable source for a model
+% this package actually implements. Nothing is cited that is not implemented,
+% and nothing implemented is attributed to a source that does not exist. The
+% two BOND-suite entries below are unpublished local working trees and are
+% typed @misc with an explicit "no remote" note rather than dressed up as
+% journal articles.
+
+@misc{bond_api,
+  author       = {Friedman, Daniel Ari},
+  title        = {{BOND-API}: The Frozen Mission Protocol Contract for the {BOND} Film Suite},
+  year         = {2026},
+  howpublished = {Unpublished software, {PROJECT} {BOND} local working tree},
+  note         = {No remote and no DOI; cited as the protocol this package implements},
 }
 
-@article{bond_utilities,
-  author  = {Friedman, Daniel Ari},
-  title   = {BOND-Utilities (Q-BRANCH): Layer 0 Foundation},
-  journal = {BOND Suite Technical Series},
-  year    = {2026},
-  note    = {Local working tree, no remote},
+@misc{bond_utilities,
+  author       = {Friedman, Daniel Ari},
+  title        = {{BOND-Utilities} ({Q-BRANCH}): Layer 0 Foundation},
+  year         = {2026},
+  howpublished = {Unpublished software, {PROJECT} {BOND} local working tree},
+  note         = {No remote and no DOI; named as a declared, not-yet-bound integration point},
 }
 
+% --- Asset allocation: the greedy submodular maximization guarantee ---------
 @article{nemhauser1978submodular,
   author  = {Nemhauser, George L. and Wolsey, Laurence A. and Fisher, Marshall L.},
   title   = {An Analysis of Approximations for Maximizing Submodular Set Functions---{I}},
@@ -25,6 +35,7 @@
   doi     = {10.1007/BF01588971},
 }
 
+% --- Replay learning curve --------------------------------------------------
 @article{wright1936learning,
   author  = {Wright, T. P.},
   title   = {Factors Affecting the Cost of Airplanes},
@@ -36,9 +47,48 @@
   doi     = {10.2514/8.155},
 }
 
+% --- Mission reliability: series/parallel reliability block diagrams --------
 @book{barlow1975reliability,
   author    = {Barlow, Richard E. and Proschan, Frank},
   title     = {Statistical Theory of Reliability and Life Testing: Probability Models},
   publisher = {Holt, Rinehart and Winston},
+  address   = {New York},
   year      = {1975},
+}
+
+% --- Detection hazard: the homogeneous Poisson process ----------------------
+@book{ross2019probability,
+  author    = {Ross, Sheldon M.},
+  title     = {Introduction to Probability Models},
+  edition   = {12},
+  publisher = {Academic Press},
+  year      = {2019},
+}
+
+% --- Per-objective success curve: the logistic function --------------------
+@article{verhulst1838notice,
+  author  = {Verhulst, Pierre-Fran{\c{c}}ois},
+  title   = {Notice sur la loi que la population suit dans son accroissement},
+  journal = {Correspondance Math{\'e}matique et Physique},
+  volume  = {10},
+  pages   = {113--121},
+  year    = {1838},
+}
+
+% --- Asset integrity: SHA-256 and canonical text normalization -------------
+@techreport{nist2015fips180,
+  author      = {{National Institute of Standards and Technology}},
+  title       = {Secure Hash Standard ({SHS})},
+  institution = {U.S. Department of Commerce},
+  type        = {Federal Information Processing Standards Publication},
+  number      = {FIPS PUB 180-4},
+  year        = {2015},
+  doi         = {10.6028/NIST.FIPS.180-4},
+}
+
+@misc{unicode2023uax15,
+  author       = {{The Unicode Consortium}},
+  title        = {Unicode Standard Annex \#15: Unicode Normalization Forms},
+  year         = {2023},
+  howpublished = {\url{https://www.unicode.org/reports/tr15/}},
 }

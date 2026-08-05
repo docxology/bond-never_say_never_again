@@ -74,10 +74,47 @@ def test_iterations_to_target_edge_cases():
     assert iterations_to_target(0.4, 0.6, 0.5, 0.9) is None
     # Zero rate with unmet target -> no learning -> unreachable.
     assert iterations_to_target(0.4, 0.7, 0.0, 0.6) is None
-    # Asymptote exactly equals target -> ratio 0 -> reached at iteration 1.
-    assert iterations_to_target(0.4, 0.6, 0.5, 0.6) == 1
+    # Negative rate -> the curve diverges from the target -> unreachable.
+    assert iterations_to_target(0.4, 0.7, -0.5, 0.6) is None
     # Flat curve (final == initial) under target -> unreachable.
     assert iterations_to_target(0.4, 0.4, 0.5, 0.6) is None
+
+
+def test_iterations_to_target_asymptote_equal_to_target_is_unreachable():
+    """final == target is unreachable: the curve approaches but never attains.
+
+    This pins a real fixed defect. The solver previously returned 1 here,
+    claiming the target was met on the first replay. The positive control below
+    shows that claim was false: the curve is strictly under the target at every
+    finite iteration tested, including the one it used to return.
+    """
+    initial, final, rate = 0.4, 0.6, 0.5
+    target = final
+
+    assert iterations_to_target(initial, final, rate, target) is None
+
+    # Positive control: had the answer been n, the score at n would meet the
+    # target. It does not — over the whole operationally meaningful range,
+    # including the n = 1 the buggy version used to return.
+    for n in range(1, 21):
+        assert exponential_learning(initial, final, rate, n) < target
+
+    # Honest bound on the above. "Never attains" is a statement about the real
+    # numbers. In float64 the residual (final - initial) * exp(-rate * n)
+    # eventually falls below the ULP of `final` and the score rounds up to the
+    # asymptote exactly. That happens far outside any useful replay count, and
+    # it is a property of binary floating point, not of the model — so the
+    # solver still correctly reports the target as unreachable.
+    assert exponential_learning(initial, final, rate, 1000) == target
+
+
+def test_iterations_to_target_answer_is_the_smallest_that_works():
+    """The returned n reaches the target and n-1 does not — a tight bound."""
+    initial, final, rate, target = 0.4, 0.7, 0.5, 0.6
+    n = iterations_to_target(initial, final, rate, target)
+    assert n is not None
+    assert exponential_learning(initial, final, rate, n) >= target - TOL
+    assert exponential_learning(initial, final, rate, n - 1) < target
 
 
 def test_canonical_learning_forecast_values():

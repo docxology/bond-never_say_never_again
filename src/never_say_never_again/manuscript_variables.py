@@ -21,16 +21,35 @@ from typing import Any
 import yaml
 
 from never_say_never_again import __version__
-from never_say_never_again.asset_allocator import canonical_allocation
-from never_say_never_again.learning_curve import canonical_learning_forecast
-from never_say_never_again.legacy_assets import compute_integrity
+from never_say_never_again.asset_allocator import (
+    ALLOCATION_BUDGET,
+    ALLOCATION_POOL,
+    canonical_allocation,
+)
+from never_say_never_again.learning_curve import (
+    LEARNING_BONUS_CAP,
+    LEARNING_RATE,
+    LEARNING_TARGET_SCORE,
+    canonical_learning_forecast,
+)
+from never_say_never_again.legacy_assets import canonical_catalog
 from never_say_never_again.mission_replay import (
+    DEFAULT_SENSITIVITY,
+    DEFAULT_SUCCESS_THRESHOLD,
     LEGACY_SCENARIO,
+    MISSION_SEED,
     REMOUNT_CONFIG,
     ReplayEngine,
 )
 from never_say_never_again.op_diff import diff_outcomes
-from never_say_never_again.remount_risk import canonical_risk_report
+from never_say_never_again.remount_risk import (
+    CAMPAIGN_PENALTY,
+    CAMPAIGN_REWARD,
+    DETECTION_RATE,
+    REMOUNT_RISK_BLOCKS,
+    REPLAY_CAMPAIGN_LENGTH,
+    canonical_risk_report,
+)
 
 __all__ = ["generate_variables", "load_manuscript_config", "resolve_manuscript_tree"]
 
@@ -92,11 +111,14 @@ def generate_variables(
     allocation = canonical_allocation()
     learning = canonical_learning_forecast(engine)
 
-    # Deterministic asset registry for the migration summary.
-    asset_payload = "".join(
-        f"{o.objective_id}:{o.baseline_intel:.4f}" for o in LEGACY_SCENARIO.objectives
-    )
-    asset_fingerprint = compute_integrity(asset_payload)[:12]
+    # The migration summary reads the *same* canonical catalog the mission
+    # provider migrates, so MIGRATED_ASSET_COUNT and ASSET_FINGERPRINT describe
+    # the real migration rather than a parallel derivation. (Before this was
+    # fixed the count was taken from the scenario's objective count, which
+    # over-reported the migration by one asset.)
+    catalog = canonical_catalog()
+    asset_fingerprint = catalog.stable_integrity()[:12]
+    asset_kinds = catalog.counts_by_kind()
 
     return {
         "FILM_IDENTITY": FILM_IDENTITY,
@@ -105,6 +127,7 @@ def generate_variables(
         "PAPER_TITLE": str(paper.get("title", "")),
         "PAPER_SUBTITLE": str(paper.get("subtitle", "")),
         "NUM_OBJECTIVES": str(len(LEGACY_SCENARIO.objectives)),
+        "SCENARIO_NAME": LEGACY_SCENARIO.name,
         "ORIGINAL_COMMAND_SCORE": f"{original.command_score:.4f}",
         "REMOUNT_COMMAND_SCORE": f"{remount.command_score:.4f}",
         "COMMAND_DELTA": f"{op_diff.weighted_delta:+.4f}",
@@ -112,19 +135,52 @@ def generate_variables(
         "NUM_IMPROVED": str(op_diff.improved),
         "NUM_REGRESSED": str(op_diff.regressed),
         "NUM_UNCHANGED": str(op_diff.unchanged),
-        "MIGRATED_ASSET_COUNT": str(len(LEGACY_SCENARIO.objectives)),
+        "ORIGINAL_FULFILLED": str(original.objectives_fulfilled),
+        "REMOUNT_FULFILLED": str(remount.objectives_fulfilled),
+        "FULFILLED_DELTA": (
+            f"{remount.objectives_fulfilled - original.objectives_fulfilled:+d}"
+        ),
+        "MIGRATED_ASSET_COUNT": str(len(catalog)),
+        "MIGRATED_ASSET_KINDS": ", ".join(
+            f"{count} {kind}" for kind, count in asset_kinds.items()
+        ),
         "ASSET_FINGERPRINT": asset_fingerprint,
+        # Model parameters — tokenized so the setup section cannot drift from
+        # the constants the code actually runs on.
+        "MODEL_SENSITIVITY": f"{DEFAULT_SENSITIVITY:g}",
+        "MODEL_SUCCESS_THRESHOLD": f"{DEFAULT_SUCCESS_THRESHOLD:g}",
+        "REMOUNT_INTEL_BONUS": f"{REMOUNT_CONFIG.intel_bonus:g}",
+        "REMOUNT_DOCTRINE": f"{REMOUNT_CONFIG.doctrine:g}",
+        "REMOUNT_REALISM_CEILING": f"{REMOUNT_CONFIG.realism_ceiling:g}",
+        "MISSION_SEED": str(MISSION_SEED),
+        "RISK_DETECTION_RATE": f"{DETECTION_RATE:g}",
+        "RISK_CAMPAIGN_LENGTH": str(REPLAY_CAMPAIGN_LENGTH),
+        "RISK_CAMPAIGN_REWARD": f"{CAMPAIGN_REWARD:g}",
+        "RISK_CAMPAIGN_PENALTY": f"{CAMPAIGN_PENALTY:g}",
+        "RISK_BLOCK_STRUCTURE": ", ".join(
+            f"{len(block)}" for block in REMOUNT_RISK_BLOCKS
+        ),
         "RISK_DETECTION_PROBABILITY": f"{risk.detection_probability:.4f}",
         "RISK_EXPECTED_OPERATIONS": f"{risk.expected_operations:.2f}",
         "RISK_RELIABILITY": f"{risk.reliability:.4f}",
         "RISK_CAMPAIGN_EV": f"{risk.campaign_ev:+.2f}",
+        "ALLOC_BUDGET": str(ALLOCATION_BUDGET),
+        "ALLOC_OBJECTIVE_COUNT": str(len(ALLOCATION_POOL)),
         "ALLOC_ASSETS_USED": str(sum(allocation.assignments.values())),
         "ALLOC_GAIN_RATIO": f"{allocation.gain_ratio:.4f}",
         "ALLOC_TOTAL_GAIN": f"{allocation.total_gain:+.4f}",
+        "LEARN_RATE": f"{LEARNING_RATE:g}",
+        "LEARN_BONUS_CAP": f"{LEARNING_BONUS_CAP:g}",
+        "LEARN_TARGET_SCORE": f"{LEARNING_TARGET_SCORE:g}",
         "LEARN_ITERATIONS": str(learning.iterations),
+        "LEARN_INITIAL_SCORE": f"{learning.initial_score:.4f}",
         "LEARN_FINAL_SCORE": f"{learning.final_score:.4f}",
         "LEARN_DELTA": f"{learning.delta:+.4f}",
-        "LEARN_TARGET_ITERATION": str(learning.target_iteration or "unreached"),
+        "LEARN_TARGET_ITERATION": (
+            "unreached"
+            if learning.target_iteration is None
+            else str(learning.target_iteration)
+        ),
         "PYTHON_VERSION": platform.python_version(),
         "GENERATION_TIMESTAMP": datetime.now(timezone.utc).isoformat(
             timespec="seconds"

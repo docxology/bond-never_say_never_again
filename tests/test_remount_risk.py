@@ -6,6 +6,7 @@ reliability blocks, campaign expected value, and their error paths. No mocks.
 
 from __future__ import annotations
 
+import itertools
 import math
 
 import pytest
@@ -172,3 +173,62 @@ def test_risk_report_validation():
             reliability=1.5,
             campaign_ev=1.0,
         )
+
+
+def test_campaign_ev_is_strictly_decreasing_in_replay_count():
+    """The manuscript's central risk claim, asserted over the real model.
+
+    03_results.md argues the campaign expected value strictly decreases in the
+    replay count N, because reliability is constant in N while the detection
+    term rises monotonically. This binds that prose to the code.
+    """
+    reliability = block_reliability(REMOUNT_RISK_BLOCKS)
+    values = [
+        campaign_expected_value(
+            reliability,
+            detection_probability(DETECTION_RATE, n),
+            CAMPAIGN_REWARD,
+            CAMPAIGN_PENALTY,
+        )
+        for n in range(1, 41)
+    ]
+    assert all(later < earlier for earlier, later in itertools.pairwise(values))
+
+
+def test_campaign_ev_crosses_zero_and_stays_negative():
+    """The crossing the manuscript describes exists and is not an artifact.
+
+    A monotone-decreasing sequence is only interesting if it actually changes
+    sign inside a plausible campaign length — otherwise "keep the campaign
+    short" would be advice about nothing.
+    """
+    reliability = block_reliability(REMOUNT_RISK_BLOCKS)
+
+    def ev(n: int) -> float:
+        return campaign_expected_value(
+            reliability,
+            detection_probability(DETECTION_RATE, n),
+            CAMPAIGN_REWARD,
+            CAMPAIGN_PENALTY,
+        )
+
+    assert ev(REPLAY_CAMPAIGN_LENGTH) > 0.0, "canonical campaign should still pay"
+
+    crossing = next(n for n in range(1, 200) if ev(n) <= 0.0)
+    assert crossing > REPLAY_CAMPAIGN_LENGTH
+    # Once negative it never recovers.
+    assert all(ev(n) < 0.0 for n in range(crossing + 1, crossing + 20))
+    # With equal reward and penalty the crossing is where hazard meets
+    # reliability — the specific claim made in the results section.
+    assert detection_probability(DETECTION_RATE, crossing) >= reliability
+    assert detection_probability(DETECTION_RATE, crossing - 1) < reliability
+
+
+def test_redundancy_strictly_helps_and_series_strictly_hurts():
+    """Positive control on the block model: structure must actually matter."""
+    single = block_reliability(((0.8,),))
+    redundant = block_reliability(((0.8, 0.8),))
+    chained = block_reliability(((0.8,), (0.8,)))
+    assert redundant > single > chained
+    assert redundant == pytest.approx(1 - 0.2 * 0.2, abs=TOL)
+    assert chained == pytest.approx(0.64, abs=TOL)

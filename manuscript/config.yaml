@@ -6,9 +6,9 @@
 # Consumed by: `src/never_say_never_again/manuscript_variables.py`
 paper:
   title: "Never Say Never Again: REMOUNT — Special-Agent Mission Software"
-  subtitle: "Legacy mission replay, op diff, and remastered-intel migration"
+  subtitle: "Replaying a legacy operation: op diff, intel migration, escalation risk, marginal-gain allocation, and replay learning"
   version: "0.1.0"
-  date: "2026-08-04"
+  date: "2026-08-05"
 
 # Consumed by: `infrastructure.publishing.extract_publication_metadata`
 authors:
@@ -27,7 +27,11 @@ keywords:
   - "legacy mission replay"
   - "op diff"
   - "asset migration"
-  - "remastered intel"
+  - "integrity fingerprinting"
+  - "detection hazard"
+  - "reliability block diagram"
+  - "submodular maximization"
+  - "learning curve"
   - "deterministic simulation"
   - "reproducible research"
 
@@ -50,9 +54,17 @@ testing:
   max_infra_test_failures: 0
   max_project_test_failures: 0
 
-# REMOUNT domain parameters — read by `src/never_say_never_again/` and the
-# mission provider. Canonical numeric constants live in the domain modules;
-# this block documents the experiment for human readers (not the token source).
+# REMOUNT domain parameters.
+#
+# This block is a MIRROR, not a source. The canonical constants live in the
+# domain modules (mission_replay.py, legacy_assets.py, remount_risk.py,
+# asset_allocator.py, learning_curve.py) and the manuscript tokens are read
+# from those modules directly. This block exists so a human can see the whole
+# parameter set in one place.
+#
+# The mirror is ENFORCED, not decorative: `tests/test_manuscript_variables.py`
+# asserts every value below equals the constant the code runs on, so changing a
+# constant without updating this block fails the suite (and vice versa).
 remount:
   film: "never_say_never_again"
   codename: "REMOUNT"
@@ -60,6 +72,12 @@ remount:
   sensitivity: 6.0
   success_threshold: 0.5
   seed: 13
+  objectives: 4
+  legacy_assets: 3
+  config:
+    intel_bonus: 0.15
+    doctrine: 1.0
+    realism_ceiling: 1.0
   risk:
     detection_rate: 0.25
     replay_campaign_length: 6

@@ -108,3 +108,151 @@ def test_every_prose_token_resolves_from_live_manuscript():
             assert token in variables, (
                 f"manuscript token {token!r} in {section.name} has no generated value"
             )
+
+
+def test_config_yaml_mirrors_the_code_constants():
+    """`manuscript/config.yaml` documents the parameters — this proves it is honest.
+
+    The YAML block is a mirror for human readers; the code constants are the
+    source. Without this gate the mirror could drift silently and the setup
+    section would describe a model nobody runs. Each assertion below names the
+    constant it binds to, so a mismatch says exactly which pair diverged.
+    """
+    from never_say_never_again.asset_allocator import ALLOCATION_BUDGET, ALLOCATION_POOL
+    from never_say_never_again.learning_curve import (
+        LEARNING_BONUS_CAP,
+        LEARNING_ITERATIONS,
+        LEARNING_RATE,
+        LEARNING_TARGET_SCORE,
+    )
+    from never_say_never_again.legacy_assets import LEGACY_INDEX
+    from never_say_never_again.mission_replay import (
+        DEFAULT_SENSITIVITY,
+        DEFAULT_SUCCESS_THRESHOLD,
+        LEGACY_SCENARIO,
+        MISSION_SEED,
+        REMOUNT_CONFIG,
+    )
+    from never_say_never_again.remount_risk import (
+        CAMPAIGN_PENALTY,
+        CAMPAIGN_REWARD,
+        DETECTION_RATE,
+        REPLAY_CAMPAIGN_LENGTH,
+    )
+
+    block = load_manuscript_config()["remount"]
+
+    assert block["scenario"] == LEGACY_SCENARIO.name
+    assert block["objectives"] == len(LEGACY_SCENARIO.objectives)
+    assert block["legacy_assets"] == len(LEGACY_INDEX)
+    assert block["sensitivity"] == pytest.approx(DEFAULT_SENSITIVITY)
+    assert block["success_threshold"] == pytest.approx(DEFAULT_SUCCESS_THRESHOLD)
+    assert block["seed"] == MISSION_SEED
+
+    assert block["config"]["intel_bonus"] == pytest.approx(REMOUNT_CONFIG.intel_bonus)
+    assert block["config"]["doctrine"] == pytest.approx(REMOUNT_CONFIG.doctrine)
+    assert block["config"]["realism_ceiling"] == pytest.approx(
+        REMOUNT_CONFIG.realism_ceiling
+    )
+
+    assert block["risk"]["detection_rate"] == pytest.approx(DETECTION_RATE)
+    assert block["risk"]["replay_campaign_length"] == REPLAY_CAMPAIGN_LENGTH
+    assert block["risk"]["campaign_reward"] == pytest.approx(CAMPAIGN_REWARD)
+    assert block["risk"]["campaign_penalty"] == pytest.approx(CAMPAIGN_PENALTY)
+
+    assert block["allocation"]["budget"] == ALLOCATION_BUDGET
+    assert len(ALLOCATION_POOL) == len(LEGACY_SCENARIO.objectives)
+
+    assert block["learning"]["rate"] == pytest.approx(LEARNING_RATE)
+    assert block["learning"]["iterations"] == LEARNING_ITERATIONS
+    assert block["learning"]["bonus_cap"] == pytest.approx(LEARNING_BONUS_CAP)
+    assert block["learning"]["target_score"] == pytest.approx(LEARNING_TARGET_SCORE)
+
+
+def test_config_mirror_gate_actually_fails_on_drift(tmp_path: Path):
+    """Negative control: the mirror gate above is not green by construction.
+
+    A config whose seed disagrees with the code must be detectable. If this
+    passes trivially the gate above proves nothing.
+    """
+    import yaml
+
+    from never_say_never_again.mission_replay import MISSION_SEED
+
+    real = load_manuscript_config()
+    drifted = tmp_path / "drifted.yaml"
+    real["remount"]["seed"] = MISSION_SEED + 1
+    drifted.write_text(yaml.safe_dump(real), encoding="utf-8")
+
+    reloaded = load_manuscript_config(drifted)
+    assert reloaded["remount"]["seed"] != MISSION_SEED
+
+
+def test_load_manuscript_config_rejects_non_mapping(tmp_path: Path):
+    """A YAML list (not a mapping) at top level must raise, not be accepted."""
+    bad = tmp_path / "list.yaml"
+    bad.write_text("- one\n- two\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="top-level mapping"):
+        load_manuscript_config(bad)
+
+
+def test_require_outputs_guard_rejects_an_empty_domain_surface(monkeypatch):
+    """`require_outputs=True` must fail on an empty scenario, and pass otherwise.
+
+    No mock framework: this replaces the module-level canonical scenario with a
+    real ``Scenario``-shaped value carrying no objectives, via monkeypatch (an
+    environment substitution, not a dependency mock), then restores it.
+    """
+    from never_say_never_again import manuscript_variables as mv
+
+    class _EmptyScenario:
+        name = "EMPTY"
+        objectives: tuple[object, ...] = ()
+
+    monkeypatch.setattr(mv, "LEGACY_SCENARIO", _EmptyScenario)
+    with pytest.raises(ValueError, match="domain surface is empty"):
+        mv.generate_variables(require_outputs=True)
+
+
+def test_seed_token_matches_the_mission_provenance():
+    """MISSION_SEED in the manuscript is the seed the mission actually records."""
+    from never_say_never_again.mission import MissionProvider
+
+    provider = MissionProvider()
+    outcome = provider.execute(provider.plan(provider.brief()))
+    assert generate_variables()["MISSION_SEED"] == str(outcome.provenance.seed)
+
+
+def test_fulfilled_tokens_match_a_live_replay():
+    """The results table's fulfilled counts are bound to real replay output."""
+    from never_say_never_again.mission_replay import (
+        LEGACY_SCENARIO,
+        REMOUNT_CONFIG,
+        RemountConfig,
+        ReplayEngine,
+    )
+
+    engine = ReplayEngine()
+    original = engine.replay(LEGACY_SCENARIO, RemountConfig(intel_bonus=0.0))
+    remount = engine.replay(LEGACY_SCENARIO, REMOUNT_CONFIG)
+    variables = generate_variables()
+
+    assert variables["ORIGINAL_FULFILLED"] == str(original.objectives_fulfilled)
+    assert variables["REMOUNT_FULFILLED"] == str(remount.objectives_fulfilled)
+    delta = remount.objectives_fulfilled - original.objectives_fulfilled
+    assert variables["FULFILLED_DELTA"] == f"{delta:+d}"
+
+
+def test_no_bare_metric_numerals_in_results_prose():
+    """Results prose must not hand-author metrics — they must arrive as tokens.
+
+    Scans the results section for decimal numerals outside code spans, image
+    paths, and token braces. A hand-typed score like ``0.5161`` would trip this;
+    a ``{{TOKEN}}`` would not.
+    """
+    text = (PACKAGE_ROOT / "manuscript" / "03_results.md").read_text(encoding="utf-8")
+    stripped = _TOKEN_RE.sub("TOKEN", text)
+    stripped = re.sub(r"`[^`]*`", "CODE", stripped)
+    stripped = re.sub(r"!\[[^\]]*\]\([^)]*\)", "FIGURE", stripped)
+    offenders = re.findall(r"\d+\.\d+", stripped)
+    assert offenders == [], f"hand-authored decimals in results prose: {offenders}"

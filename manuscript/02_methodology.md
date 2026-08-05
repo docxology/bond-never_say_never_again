@@ -4,8 +4,9 @@
 
 A scenario is an ordered set of {{NUM_OBJECTIVES}} objectives, each a tuple of
 `objective_id`, a positive `weight`, a `difficulty` in [0, 1], and a
-`baseline_intel` in [0, 1]. The canonical dataset, `THUNDERBALL-65` (see
-`mission_replay.py`), reopens the 1965 operation.
+`baseline_intel` in [0, 1]. The canonical dataset, `{{SCENARIO_NAME}}` (see
+`mission_replay.py`), reopens the 1965 operation. Weights need not sum to one;
+they are normalized when the command score is formed.
 
 ## Remount configuration
 
@@ -23,15 +24,22 @@ The effective intel for an objective is `clamp((baseline + bonus) * doctrine,
 
 ## Success model
 
-For each objective the engine computes a deterministic success score with a
-logistic curve:
+For each objective the engine computes a deterministic success score with the
+logistic (Verhulst) curve [@verhulst1838notice]:
 
 $$\text{score}(\Delta) = \frac{1}{1 + e^{-S\,\Delta}}, \qquad \Delta =
 \text{eff\_intel} - \text{difficulty}$$
 
-where `S` is the sensitivity (default 6.0). A score at or above the
-`success_threshold` (default 0.5) counts the objective as *achieved*. The
-command score is the weight-weighted mean of per-objective scores.
+where `S` is the sensitivity (default {{MODEL_SENSITIVITY}}). A score at or
+above the `success_threshold` (default {{MODEL_SUCCESS_THRESHOLD}}) counts the
+objective as *achieved*. The command score is the weight-weighted mean of
+per-objective scores. The implementation evaluates the curve in its
+numerically stable branched form (`exp(z) / (1 + exp(z))` for negative `z`) so
+that a large negative margin cannot overflow.
+
+The choice of `S` is a modelling choice, not a fitted parameter: it sets how
+sharply an intel surplus converts into success, and no operational data is used
+to calibrate it.
 
 ## Op diff
 
@@ -45,9 +53,10 @@ objective weights, and the overall verdict follows the sign of
 ## Remount risk (escalation hazard and reliability)
 
 `remount_risk.py` models the price of a replay. Detection follows a memoryless
-exponential (Poisson) hazard — `P(alert within N replays) = 1 - exp(-rate * N)`
-with expected operations before alert `1 / rate` — so repeated replays
-monotonically raise the chance of alerting the adversary. Mission success is
+exponential (Poisson) hazard [@ross2019probability] —
+`P(alert within N replays) = 1 - exp(-rate * N)` with expected operations
+before alert `1 / rate` — so repeated replays monotonically raise the chance of
+alerting the adversary. Mission success is
 modeled as a reliability block diagram: a *series* of *parallel* blocks, where
 each block (intel acquisition, insertion, extraction) succeeds if any of its
 redundant paths succeeds [@barlow1975reliability]. The campaign expected value
@@ -69,17 +78,30 @@ Nemhauser–Wolsey–Fisher [@nemhauser1978submodular].
 `learning_curve.py` forecasts how rehearsal improves the remount. The command
 score follows an exponential learning curve
 `final - (final - initial) * exp(-rate * n)` from the baseline replay
-(`initial`) toward a fully-reinforced replay asymptote (`final`) [@wright1936learning];
-the solver
-returns the first iteration reaching a target score, or marks the target
-unreachable when the asymptote falls short.
+(`initial`) toward a fully-reinforced replay asymptote (`final`)
+[@wright1936learning]. Both endpoints are *computed*: each is a real replay of
+the scenario through the same engine, under the identity config and under the
+capped-bonus config respectively.
+
+Inverting the curve gives the first iteration `n` reaching a target score,
+`n = ceil(-ln((final - target) / (final - initial)) / rate)`. The solver returns
+`None` — target unreachable — whenever the asymptote is at *or below* the
+target, since the curve approaches its asymptote without ever attaining it, and
+whenever the rate is non-positive.
 
 ## Legacy asset migration
 
-Each legacy dossier is a `LegacyAsset` carrying a declared SHA-256 integrity
-fingerprint. `verify` recomputes the fingerprint over NFC-normalized UTF-8
-content and compares it to the declared one (`None` = un-scanned, treated as
-self-consistent). `remaster` migrates a source into `version + 1` with fresh
-content, optionally reclassifying/re-typing it, and recomputes the fingerprint.
-An `AssetCatalog` aggregates assets, verifies them wholesale, and migrates a
-subset in a single deterministic batch.
+Each legacy dossier is a `LegacyAsset` carrying a declared SHA-256
+[@nist2015fips180] integrity fingerprint. `verify` recomputes the fingerprint
+over NFC-normalized [@unicode2023uax15] UTF-8 content and compares it to the
+declared one (`None` = un-scanned, treated as self-consistent). Normalizing
+before hashing is what makes the fingerprint a property of the *text* rather
+than of one particular encoding of it. `remaster` migrates a source into
+`version + 1` with fresh content, optionally reclassifying/re-typing it, and
+recomputes the fingerprint; by default it refuses to migrate a source that
+fails its own integrity check, raising `AssetIntegrityError` rather than
+propagating a suspect dossier. An `AssetCatalog` aggregates assets, verifies
+them wholesale, and migrates a subset in a single deterministic batch. The
+canonical index the remount actually consumes is `LEGACY_INDEX`, exposed
+through `canonical_catalog()` so the mission, the manuscript, and the figures
+share one definition of the migration.

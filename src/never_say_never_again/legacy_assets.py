@@ -26,10 +26,14 @@ import unicodedata
 from dataclasses import dataclass
 
 __all__ = [
+    "LEGACY_INDEX",
     "AssetCatalog",
     "AssetIntegrityError",
     "LegacyAsset",
     "MigratedAsset",
+    "MigrationBatch",
+    "canonical_bytes",
+    "canonical_catalog",
     "compute_integrity",
     "remaster",
     "verify",
@@ -268,3 +272,44 @@ class AssetCatalog:
                 )
             )
         return MigrationBatch(assets=tuple(batch))
+
+
+#: The canonical legacy intelligence index carried forward by the remount: the
+#: three THUNDERBALL-65 dossiers that survive into the 1983 re-op. This is the
+#: single source of truth for "how many assets the remount migrates" — the
+#: mission provider, the manuscript tokens, and the asset-distribution figure
+#: all read it, so none of them can disagree about the migration.
+LEGACY_INDEX: tuple[LegacyAsset, ...] = (
+    LegacyAsset(
+        id="intel-TB-01",
+        kind="intel",
+        classification="TOP_SECRET",
+        content="Largo fleet registry; two warheads tracked to Palmyra.",
+        version=1,
+    ),
+    LegacyAsset(
+        id="gadget-TB-02",
+        kind="gadget",
+        classification="CONFIDENTIAL",
+        content="Cigar-case harpoon rig; flutter valve timer.",
+        version=1,
+    ),
+    LegacyAsset(
+        id="intel-TB-03",
+        kind="intel",
+        classification="SECRET",
+        content="Largo's blackmail ledger; funding chain via Spectre.",
+        version=1,
+    ),
+)
+
+
+def canonical_catalog() -> AssetCatalog:
+    """A fresh :class:`AssetCatalog` over the canonical :data:`LEGACY_INDEX`.
+
+    Returns a new catalog on every call because :class:`AssetCatalog` is
+    mutable (``add``); the underlying :class:`LegacyAsset` records are frozen,
+    so successive catalogs are value-identical and their
+    :meth:`AssetCatalog.stable_integrity` fingerprints match exactly.
+    """
+    return AssetCatalog(list(LEGACY_INDEX))

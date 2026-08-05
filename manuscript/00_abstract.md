@@ -15,10 +15,12 @@ canonical replay yields an original command score of {{ORIGINAL_COMMAND_SCORE}}
 and a remount command score of {{REMOUNT_COMMAND_SCORE}} (weighted delta
 {{COMMAND_DELTA}}, overall verdict *{{OVERALL_VERDICT}}*). Per-objective, the
 remount improves {{NUM_IMPROVED}} objectives, regresses {{NUM_REGRESSED}}, and
-leaves {{NUM_UNCHANGED}} unchanged. The engine migrates
-{{MIGRATED_ASSET_COUNT}} legacy intelligence dossiers, re-fingerprinting each
-(SHA-256) so the remount can verify integrity before consumption
-(fingerprint {{ASSET_FINGERPRINT}}).
+leaves {{NUM_UNCHANGED}} unchanged, lifting the count of fulfilled objectives from
+{{ORIGINAL_FULFILLED}} to {{REMOUNT_FULFILLED}}. The engine migrates
+{{MIGRATED_ASSET_COUNT}} legacy intelligence dossiers
+({{MIGRATED_ASSET_KINDS}}), re-fingerprinting each (SHA-256) so the remount can
+verify integrity before consumption (catalog fingerprint
+{{ASSET_FINGERPRINT}}).
 
 The remount is not costless. Replaying the op accumulates a detection hazard:
 over a campaign of replay operations the probability of alerting the adversary
@@ -33,4 +35,8 @@ the target by iteration {{LEARN_TARGET_ITERATION}}).
 
 Everything computes deterministically — no random draws, no external calls — so
 the remount is reproducible to the byte on Python {{PYTHON_VERSION}} (generated
-{{GENERATION_TIMESTAMP}}).
+{{GENERATION_TIMESTAMP}}). Every quantity above is a token injected from the
+running code; none is transcribed by hand. The models themselves are standard
+and cited, not invented here: the contribution is their deterministic,
+auditable composition into a single remount pipeline, evaluated at one
+canonical parameter set rather than calibrated against operational data.

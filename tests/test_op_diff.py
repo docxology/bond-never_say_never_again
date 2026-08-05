@@ -160,3 +160,62 @@ def test_custom_epsilon_reclassifies_tiny_deltas_as_unchanged():
     loose = diff_outcomes(a, b, epsilon=1.0)
     assert loose.overall == "unchanged"
     assert all(d.verdict == "unchanged" for d in loose.diffs)
+
+
+def test_objective_present_on_only_one_side_is_skipped_entirely():
+    """An objective missing from the remount contributes to nothing.
+
+    This covers the documented skip path and pins the documented semantics:
+    the objective produces no diff row, is counted in none of the
+    improved/regressed/unchanged tallies, and does not enter either average.
+    A caller detects the mismatch only by comparing lengths.
+    """
+    engine = ReplayEngine()
+    shared = ObjectiveSpec(
+        objective_id="shared", weight=1.0, difficulty=0.5, baseline_intel=0.5
+    )
+    dropped = ObjectiveSpec(
+        objective_id="dropped", weight=9.0, difficulty=0.9, baseline_intel=0.1
+    )
+    identity = RemountConfig(intel_bonus=0.0)
+
+    two = Scenario(name="TWO", objectives=(shared, dropped))
+    one = Scenario(name="ONE", objectives=(shared,))
+
+    original = engine.replay(two, identity)
+    remount = engine.replay(one, RemountConfig(intel_bonus=0.2))
+
+    diff = diff_outcomes(original, remount)
+
+    assert [d.objective_id for d in diff.diffs] == ["shared"]
+    assert diff.improved + diff.regressed + diff.unchanged == 1
+    assert len(diff.diffs) < len(original.outcomes)  # the mismatch signal
+    # The dropped objective carried weight 9.0; had it leaked into the
+    # aggregate it would have dominated. Unity weights make the two averages
+    # coincide for the single surviving objective.
+    assert diff.weighted_delta == pytest.approx(diff.mean_delta, abs=TOL)
+
+
+def test_unknown_scenario_falls_back_to_unity_weights():
+    """A scenario the package does not ship gets unity weights, not a crash."""
+    engine = ReplayEngine()
+    scenario = Scenario(
+        name="NOT-A-CANONICAL-SCENARIO",
+        objectives=(
+            ObjectiveSpec(
+                objective_id="a", weight=1.0, difficulty=0.4, baseline_intel=0.5
+            ),
+            ObjectiveSpec(
+                objective_id="b", weight=99.0, difficulty=0.6, baseline_intel=0.3
+            ),
+        ),
+    )
+    original = engine.replay(scenario, RemountConfig(intel_bonus=0.0))
+    remount = engine.replay(scenario, RemountConfig(intel_bonus=0.25))
+
+    diff = diff_outcomes(original, remount)
+
+    # Under unity weights the weighted mean collapses onto the plain mean even
+    # though the scenario's own weights differ by a factor of 99.
+    assert diff.weighted_delta == pytest.approx(diff.mean_delta, abs=TOL)
+    assert diff.overall == "improved"

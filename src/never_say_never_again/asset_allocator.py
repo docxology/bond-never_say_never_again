@@ -10,8 +10,11 @@ maximization heuristic of Nemhauser–Wolsey–Fisher (1978), which guarantees a
   objective's score with ``k`` assigned assets: ``cap * (1 - exp(-e * k))``.
 * :func:`marginal_gain` — the improvement curve's increment per extra asset.
 * :func:`allocate` — deterministic greedy: at each of ``budget`` rounds assign
-  one asset to the objective with the largest capped marginal gain, breaking
-  ties by objective order (stable, byte-identical).
+  one asset to the objective with the largest *weight-scaled* capped marginal
+  gain, breaking ties by objective order (stable, byte-identical). Scaling by
+  weight is what makes the greedy maximize the same weighted score the plan
+  reports; selecting on the raw score gain instead maximizes a different
+  function and forfeits the guarantee.
 * :class:`AllocationPlan` — assignments, per-asset marginal gains, final
   weighted score, and the gain ratio vs full saturation.
 
@@ -119,6 +122,22 @@ def _capped_marginal(objective: AllocatableObjective, assets: int) -> float:
     return _score_with(objective, assets + 1) - _score_with(objective, assets)
 
 
+def _weighted_marginal(objective: AllocatableObjective, assets: int) -> float:
+    """Marginal gain in the *objective function the plan reports*.
+
+    The plan's ``total_weighted_score`` is a weight-weighted sum, so the
+    quantity a greedy must maximize per asset is the weight-scaled marginal
+    gain — not the raw score gain.
+
+    This distinction is load-bearing, not cosmetic. Selecting on the unweighted
+    marginal maximizes the wrong function: on the canonical pool it produced a
+    plan strictly worse than a naive uniform spread, while still reporting a
+    ``(1 - 1/e)`` guarantee that only holds for the function actually being
+    maximized. ``tests/test_asset_allocator.py`` pins the comparison.
+    """
+    return objective.weight * _capped_marginal(objective, assets)
+
+
 @dataclass(frozen=True)
 class AllocationPlan:
     """Deterministic allocation result.
@@ -126,7 +145,9 @@ class AllocationPlan:
     Attributes:
         assignments: objective_id → number of assets assigned.
         final_scores: objective_id → capped final score.
-        marginal_gains: Per-asset marginal gains, in allocation order.
+        marginal_gains: Per-asset *weighted* marginal gains, in allocation
+            order — each entry is the increase in ``total_weighted_score``
+            bought by that asset, so the entries sum to ``total_gain``.
         total_weighted_score: Weighted sum of final scores.
         total_gain: Weighted score improvement over the zero-asset baseline.
         gain_ratio: ``total_gain`` over the weighted full-saturation ceiling,
@@ -146,9 +167,14 @@ def allocate(
 ) -> AllocationPlan:
     """Greedily allocate ``budget`` assets across ``objectives`` by marginal gain.
 
-    Deterministic: each round assigns to the objective with the largest capped
-    marginal gain; ties resolve to the earlier objective in the given order.
-    The loop stops early when every objective is saturated (gain <= 0).
+    Each round assigns one asset to the objective with the largest
+    *weight-scaled* capped marginal gain — the marginal increase in the plan's
+    own ``total_weighted_score``, which is the monotone submodular function the
+    ``(1 - 1/e)`` guarantee applies to. Ties resolve to the earlier objective in
+    the given order, so the result is deterministic and byte-stable.
+
+    The loop stops early when every objective is saturated (gain <= 0), in
+    which case fewer than ``budget`` assets are deployed.
     """
     if not objectives:
         raise ValueError("objectives must be non-empty")
@@ -166,7 +192,9 @@ def allocate(
         best: AllocatableObjective | None = None
         best_gain = -1.0
         for objective in objectives:
-            candidate = _capped_marginal(objective, assignments[objective.objective_id])
+            candidate = _weighted_marginal(
+                objective, assignments[objective.objective_id]
+            )
             if candidate > best_gain:  # strict > keeps the first objective on ties
                 best_gain = candidate
                 best = objective

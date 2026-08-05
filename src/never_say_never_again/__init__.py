@@ -41,10 +41,12 @@ from never_say_never_again.learning_curve import (
     iterations_to_target,
 )
 from never_say_never_again.legacy_assets import (
+    LEGACY_INDEX,
     AssetCatalog,
     LegacyAsset,
     MigratedAsset,
     MigrationBatch,
+    canonical_catalog,
     remaster,
     verify,
 )
@@ -72,6 +74,7 @@ from never_say_never_again.remount_risk import (
 __all__ = [
     "ALLOCATION_BUDGET",
     "ALLOCATION_POOL",
+    "LEGACY_INDEX",
     "LEGACY_SCENARIO",
     "REMOUNT_CONFIG",
     "AllocatableObjective",
@@ -93,6 +96,7 @@ __all__ = [
     "allocate",
     "assess_campaign",
     "canonical_allocation",
+    "canonical_catalog",
     "canonical_learning_forecast",
     "canonical_risk_report",
     "detection_probability",

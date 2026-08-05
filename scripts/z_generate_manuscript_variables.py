@@ -33,7 +33,7 @@ from never_say_never_again.figures import (
 from never_say_never_again.learning_curve import (
     canonical_learning_forecast,
 )
-from never_say_never_again.legacy_assets import AssetCatalog, LegacyAsset
+from never_say_never_again.legacy_assets import canonical_catalog
 from never_say_never_again.manuscript_variables import (
     generate_variables,
     resolve_manuscript_tree,
@@ -73,30 +73,8 @@ def main() -> int:
     render_allocation_figure(
         canonical_allocation(), path=output_root / "figures" / "asset_allocation.png"
     )
-    catalog = AssetCatalog(
-        [
-            LegacyAsset(
-                id="intel-TB-01",
-                kind="intel",
-                classification="TOP_SECRET",
-                content="fleet registry",
-            ),
-            LegacyAsset(
-                id="gadget-TB-02",
-                kind="gadget",
-                classification="CONFIDENTIAL",
-                content="harpoon rig",
-            ),
-            LegacyAsset(
-                id="intel-TB-03",
-                kind="intel",
-                classification="SECRET",
-                content="blackmail ledger",
-            ),
-        ]
-    )
     render_asset_distribution_figure(
-        catalog.counts_by_kind(),
+        canonical_catalog().counts_by_kind(),
         path=output_root / "figures" / "asset_distribution.png",
     )
 

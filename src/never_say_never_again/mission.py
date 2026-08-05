@@ -54,12 +54,13 @@ from never_say_never_again.learning_curve import (
     canonical_learning_forecast,
 )
 from never_say_never_again.legacy_assets import (
-    AssetCatalog,
-    LegacyAsset,
+    LEGACY_INDEX,
     MigrationBatch,
+    canonical_catalog,
 )
 from never_say_never_again.mission_replay import (
     LEGACY_SCENARIO,
+    MISSION_SEED,
     REMOUNT_CONFIG,
     RemountConfig,
     ReplayEngine,
@@ -79,37 +80,14 @@ __all__ = ["GADGET_REGISTRY", "MissionProvider"]
 #: the deepened risk/allocation/learning reports).
 GADGET_REGISTRY = GadgetRegistry()
 
-#: Deterministic RNG seed for the mission (0 disables randomness entirely —
-#: this mission performs no random draws, so the seed is provenance-only).
-_SEED = 13
+#: Deterministic seed recorded in provenance. Sourced from the pure core so the
+#: mission, the manuscript tokens, and ``manuscript/config.yaml`` cannot drift
+#: apart (the drift is asserted in ``tests/test_manuscript_variables.py``).
+#: This mission performs no random draws, so the seed is provenance-only.
+_SEED = MISSION_SEED
 
 #: Identity config (no remount deltas) used as the original/legacy reference.
 _IDENTITY_CONFIG = RemountConfig(intel_bonus=0.0, doctrine=1.0, realism_ceiling=1.0)
-
-#: Canonical legacy intel dossiers carried forward by the migration.
-_LEGACY_INDEX = (
-    LegacyAsset(
-        id="intel-TB-01",
-        kind="intel",
-        classification="TOP_SECRET",
-        content="Largo fleet registry; two warheads tracked to Palmyra.",
-        version=1,
-    ),
-    LegacyAsset(
-        id="gadget-TB-02",
-        kind="gadget",
-        classification="CONFIDENTIAL",
-        content="Cigar-case harpoon rig; flutter valve timer.",
-        version=1,
-    ),
-    LegacyAsset(
-        id="intel-TB-03",
-        kind="intel",
-        classification="SECRET",
-        content="Largo's blackmail ledger; funding chain via Spectre.",
-        version=1,
-    ),
-)
 
 #: Typed module-level references to the deepened canonical reports. The
 #: provider methods use these directly (never reaching through the gadget
@@ -211,7 +189,7 @@ class MissionProvider:
                 ),
                 Finding(
                     label="assets",
-                    detail=f"{len(_LEGACY_INDEX)} legacy intel dossiers queued for migration",
+                    detail=f"{len(LEGACY_INDEX)} legacy intel dossiers queued for migration",
                 ),
                 Finding(
                     label="risk",
@@ -242,7 +220,7 @@ class MissionProvider:
                 Step(
                     name="migrate",
                     action="remaster_assets",
-                    params={"records": len(_LEGACY_INDEX)},
+                    params={"records": len(LEGACY_INDEX)},
                 ),
                 Step(
                     name="assess_risk",
@@ -269,7 +247,7 @@ class MissionProvider:
         remount = self._engine.replay(LEGACY_SCENARIO, REMOUNT_CONFIG)
         op_diff = diff_outcomes(original, remount)
 
-        catalog = AssetCatalog(list(_LEGACY_INDEX))
+        catalog = canonical_catalog()
         new_contents = {
             asset.id: asset.content + f" [remastered v{asset.version + 1}]"
             for asset in catalog.assets

@@ -3,73 +3,139 @@
 A **PROJECT BOND** film package implementing the frozen `bond_api`
 `MissionProvider` protocol for mission codename **REMOUNT**.
 
-*Never Say Never Again* (1983) is itself a **remount** of *Thunderball* (1965) —
-a re-op of a completed operation, modernized and re-equipped. This package
-turns that idea into deterministic special-agent software: it replays a legacy
-mission as a remount, diffs the original vs remount outcomes, and migrates the
-remastered intelligence assets.
+*Never Say Never Again* (1983) is itself a **remount** of *Thunderball* (1965):
+a completed operation re-opened, modernized, and re-run. This package makes
+that premise literal and deterministic. It replays a legacy mission under a
+remount configuration, diffs the original against the remount objective by
+objective, migrates and re-fingerprints the legacy intelligence — and then
+prices the re-op, because a remount is never free: detection risk accumulates
+with every replay, remastered assets are scarce, and rehearsal buys less each
+time.
 
-## Concepts
+## Film concept → software
 
-| Module | Concept | What it does |
-| --- | --- | --- |
-| `src/never_say_never_again/mission_replay.py` | Legacy mission replay | Deterministically re-runs a scenario (Logistic success model over intel vs difficulty) under a remount config |
-| `src/never_say_never_again/op_diff.py` | Op diff | Compares original vs remount scores per objective and in aggregate (weighted verdict) |
-| `src/never_say_never_again/legacy_assets.py` | Legacy asset migration | Re-fingerprints (SHA-256) and migrates remastered intel; tamper detection and batch migration |
-| `src/never_say_never_again/remount_risk.py` | Remount risk | Detection (exponential hazard), series/parallel reliability blocks, campaign expected value |
-| `src/never_say_never_again/asset_allocator.py` | Asset allocation | Greedy marginal-gain (submodular) allocation of scarce remastered assets |
-| `src/never_say_never_again/learning_curve.py` | Replay learning curve | Exponential forecast of command-score improvement over rehearsals |
-| `src/never_say_never_again/mission.py` | Protocol adapter | Implements the frozen `bond_api.MissionProvider`; registers gadgets |
-| `src/never_say_never_again/manuscript_variables.py` | Token hydration | Injects `{{TOKEN}}`s from `manuscript/config.yaml` + domain surface |
-| `src/never_say_never_again/figures.py` | Rendering | Deterministic Matplotlib figures to `output/figures/` |
+| Concept in the film | Model in the code |
+| --- | --- |
+| Re-staging a finished operation | Deterministic scenario replay under a remount config |
+| "Is the remake actually better?" | Weighted per-objective op diff with a verdict |
+| Old equipment brought back into service | SHA-256 re-fingerprinting and versioned asset migration |
+| Spectre notices you are back | Poisson detection hazard accumulating over replays |
+| Limited new kit from Q-branch | Marginal-gain allocation of a scarce asset budget |
+| Bond is out of practice | Exponential replay-learning curve toward an asymptote |
 
-Mission codename **REMOUNT** (phase 4 codename **REPLAY**): the replay, diff,
-and migration core is extended with escalation-risk, marginal-gain allocation,
-and replay-learning models.
+## Modules
+
+Pure domain core — stdlib only, no `bond_api`, no `infrastructure`:
+
+| Module | What it computes |
+| --- | --- |
+| `src/never_say_never_again/mission_replay.py` | The engine. Replays a `Scenario` under a `RemountConfig` through a numerically stable logistic success curve over effective intel vs difficulty; returns per-objective outcomes and a weighted command score. Owns the canonical `THUNDERBALL-65` dataset and the shared model constants. |
+| `src/never_say_never_again/op_diff.py` | Aligns original and remount replays by objective id; per-objective deltas and verdicts plus mean, weight-weighted, and overall aggregates. |
+| `src/never_say_never_again/legacy_assets.py` | Asset integrity and migration: SHA-256 fingerprints over NFC-normalized content, tamper detection, versioned remastering, catalog aggregation, and the canonical `LEGACY_INDEX`. |
+| `src/never_say_never_again/remount_risk.py` | The cost of replaying: Poisson detection hazard, expected operations before alert, series/parallel reliability block diagrams, and campaign expected value. |
+| `src/never_say_never_again/asset_allocator.py` | Deterministic greedy allocation of scarce remastered assets by weight-scaled marginal gain over concave (submodular) improvement curves. |
+| `src/never_say_never_again/learning_curve.py` | Wright-family exponential learning forecast between two *computed* replay scores, plus the iteration-to-target solver. |
+
+Adapters — the only modules that know about anything outside the core:
+
+| Module | Role |
+| --- | --- |
+| `src/never_say_never_again/mission.py` | Implements the frozen `bond_api.MissionProvider` (`brief`/`recon`/`plan`/`execute`/`debrief`); publishes six gadgets on a module-level `GADGET_REGISTRY`. |
+| `src/never_say_never_again/manuscript_variables.py` | Hydrates every manuscript `{{TOKEN}}` from `manuscript/config.yaml` plus the live domain surface. |
+| `src/never_say_never_again/figures.py` | Four deterministic Matplotlib (Agg) figures into `output/figures/`. |
+
+## The MissionProvider surface
+
+Discovery locates this package by slug: `<slug>/mission.py` exposing a
+top-level `MissionProvider` class whose `film` attribute is
+`"never_say_never_again"`. It satisfies the protocol structurally — no
+subclassing.
+
+```python
+from never_say_never_again.mission import GADGET_REGISTRY, MissionProvider
+
+provider = MissionProvider()
+provider.film                        # "never_say_never_again"
+brief    = provider.brief()          # MissionBrief   — 6 objectives, 3 assets, 2 constraints
+report   = provider.recon(request)   # ReconReport    — 7 findings
+plan     = provider.plan(brief)      # MissionPlan    — 7 steps
+outcome  = provider.execute(plan)    # MissionOutcome — results + Provenance
+debrief  = provider.debrief(outcome) # Debrief        — 6 lessons
+
+GADGET_REGISTRY.lookup("never_say_never_again", "engine")
+# also: legacy_scenario, remount_config, remount_risk_report,
+#       allocation_plan, learning_forecast
+```
+
+This shape is frozen across the fleet — `bond-cli`, the coordinator, and the
+orchestrator all consume it. Deepen inside the package; never rename or remove
+those names.
 
 ## Quick start
 
 ```bash
-# From this package directory (deps include the sibling bond-api via path)
+# From this package directory. bond-api resolves via a local path source.
 uv sync --extra dev
+
+# Verify the environment and protocol conformance
+uv run python scripts/00_preflight.py
 
 # Run the full five-stage mission
 uv run python scripts/run_mission.py
 
-# Per-phase CLIs
+# Per-stage CLIs
 uv run python scripts/brief.py
-uv run python scripts/recon.py
+uv run python scripts/recon.py "survey the theater"
 uv run python scripts/plan.py
-uv run python scripts/execute.py
+uv run python scripts/execute.py            # --out PATH to redirect the JSON
 uv run python scripts/debrief.py
 
-# Hydrate the manuscript + render figures
+# Hydrate manuscript tokens and render the four figures
 uv run python scripts/z_generate_manuscript_variables.py
 ```
 
-## Deterministic result
+Everything writes under `output/`, which is git-ignored, so running the whole
+set leaves `git status` clean.
 
-Replaying the canonical `THUNDERBALL-65` scenario raises the weighted command
-score from ~0.311 (original) to ~0.516 (remount), verdict **improved**, and
-migrates 3 legacy intel dossiers with verified fingerprints. The deepened
-models add the cost and trajectory of replay: campaign detection risk
-~0.777 with reliability ~0.958, a marginal-gain allocation of 6 assets worth
-~0.78 of the saturation ceiling, and a learning curve reaching its target at
-iteration 3. Every number is a generated `{{TOKEN}}` in the manuscript — never
-hand-authored in prose.
+## Results
+
+The canonical remount improves on the legacy operation, and the risk model says
+to keep the campaign short. Rather than restate the figures here — where they
+would immediately begin to drift — every number lives in exactly one place and
+flows outward from it:
+
+- **Run it**: `scripts/execute.py` prints the command scores and verdict and
+  writes the full outcome to `output/data/remount_outcome.json`.
+- **Read it**: `scripts/z_generate_manuscript_variables.py` writes every
+  manuscript token to `output/data/manuscript_variables.json`.
+- **Narrative**: `manuscript/03_results.md`, where each quantity is a
+  `{{TOKEN}}` injected from the code — never hand-authored in prose.
 
 ## Verification
 
 ```bash
 uv run pytest tests/ --cov=src --cov-fail-under=90
-uv run ruff check src/ scripts/ tests/ && uv run ruff format src/ scripts/ tests/
+uv run ruff check src/ scripts/ tests/
+uv run ruff format --check src/ scripts/ tests/
 uv run mypy src/ scripts/
-rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**'
 ```
 
-Live test count and coverage: `docs/_generated/COUNTS.md`.
+The coverage gate is a 90% floor on `src/` (line + branch), with zero failures
+and zero skips. The measured test count and coverage from the most recent real
+run are recorded in [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md) —
+re-measure rather than trusting a figure quoted in prose.
+
+## Documentation
+
+| Where | What |
+| --- | --- |
+| [`docs/`](docs/) | Operational docs — architecture, agent instructions, testing philosophy, style guide |
+| [`manuscript/`](manuscript/) | The scientific write-up: abstract through references, every metric tokenized |
+| [`AGENTS.md`](AGENTS.md) | Build/test/verify contract for agents |
+| [`TODO.md`](TODO.md) | Remaining work and declared integration points |
+| [`STANDALONE.md`](STANDALONE.md) | The fork contract this package was created under |
 
 ## Local-only
 
-This is a local-only PROJECT BOND working tree — there is no remote and nothing
-is pushed. See `STANDALONE.md`.
+This is a local-only PROJECT BOND working tree. There is no git remote and
+nothing is ever pushed.

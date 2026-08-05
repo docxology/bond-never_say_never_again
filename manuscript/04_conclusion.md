@@ -30,3 +30,12 @@ paying.
 The engine's determinism makes every one of these claims independently
 auditable, and its purity (no `bond_api` imports in the domain core) keeps the
 analysis reusable beyond the BOND suite.
+
+What the package does *not* establish is equally worth stating. Every number
+here is produced by the model at one canonical parameter set; none is a
+measurement of a real operation, and no sensitivity analysis over those
+parameters is reported. The success curve's sensitivity, the detection rate,
+and the learning rate are chosen, not fitted. The conclusions are therefore
+claims about this model's behaviour — reproducible to the byte, and open to
+being falsified by anyone who reruns it — rather than claims about the world.
+The full list of bounds is in the scope section.

@@ -10,7 +10,8 @@ of a **legacy mission remount**: keep the objective set, refresh the resources,
 and re-run the scenario against the current threat model.
 
 REMOUNT ({{MISSION_CODENAME}}, package {{PACKAGE_VERSION}}) operationalizes
-that idea as software for {{FILM_IDENTITY}}. It provides three capabilities:
+that idea as software for {{FILM_IDENTITY}}. Its pure domain core provides six
+capabilities, each a separate module:
 
 1. **Legacy mission replay** (`mission_replay.py`) — deterministically re-run a
    prior operation's scenario under a remount configuration.
@@ -18,9 +19,21 @@ that idea as software for {{FILM_IDENTITY}}. It provides three capabilities:
    remount, per objective and in aggregate.
 3. **Legacy asset migration** (`legacy_assets.py`) — carry forward,
    re-fingerprint, and verify the intelligence assets the remount consumes.
+4. **Remount risk** (`remount_risk.py`) — price the re-op: the detection hazard
+   that accumulates across replays, the block-structured mission reliability,
+   and the resulting campaign expected value.
+5. **Asset allocation** (`asset_allocator.py`) — spend a scarce budget of
+   remastered assets across objectives by marginal gain.
+6. **Replay learning** (`learning_curve.py`) — forecast how far repeated
+   rehearsal can push the command score, and when it stops paying.
 
-Together they answer the operative question of any re-op: *is the remount
-actually an improvement, and can we trust the intel it relied on?*
+The first three answer the operative question of any re-op: *is the remount
+actually an improvement, and can we trust the intel it relied on?* The last
+three answer the question that follows immediately: *and is it worth running at
+all, given what a replay costs and what rehearsal can still buy?* A remount
+that improves the command score can still be a bad operation if the accumulated
+detection hazard outweighs the gain — so the engine reports both halves rather
+than only the flattering one.
 
 ## Why determinism
 

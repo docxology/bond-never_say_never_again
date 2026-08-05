@@ -26,7 +26,10 @@ import math
 from dataclasses import dataclass
 
 __all__ = [
+    "DEFAULT_SENSITIVITY",
+    "DEFAULT_SUCCESS_THRESHOLD",
     "LEGACY_SCENARIO",
+    "MISSION_SEED",
     "REMOUNT_CONFIG",
     "ObjectiveOutcome",
     "ObjectiveSpec",
@@ -35,6 +38,19 @@ __all__ = [
     "ReplayResult",
     "Scenario",
 ]
+
+#: Package-wide deterministic seed. Recorded in every mission's ``Provenance``
+#: and mirrored by ``manuscript/config.yaml``. It is *provenance-only*: no code
+#: path in this package draws a random number, so changing it cannot change a
+#: result. It lives in the pure core so the mission adapter, the manuscript
+#: tokens, and the config cross-check test all read one value.
+MISSION_SEED = 13
+
+#: Default steepness of the Logistic success curve.
+DEFAULT_SENSITIVITY = 6.0
+
+#: Default score at or above which an objective counts as achieved.
+DEFAULT_SUCCESS_THRESHOLD = 0.5
 
 
 def _require_in_unit(value: float, label: str) -> None:
@@ -168,7 +184,10 @@ class ReplayEngine:
     """Deterministic scenario replayer for the REMOUNT engine."""
 
     def __init__(
-        self, *, sensitivity: float = 6.0, success_threshold: float = 0.5
+        self,
+        *,
+        sensitivity: float = DEFAULT_SENSITIVITY,
+        success_threshold: float = DEFAULT_SUCCESS_THRESHOLD,
     ) -> None:
         if (
             isinstance(sensitivity, bool)

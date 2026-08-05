@@ -17,6 +17,7 @@ The module is pure (stdlib only).
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 
 from never_say_never_again.mission_replay import ReplayResult
 
@@ -24,6 +25,20 @@ __all__ = ["OBJECTIVE_DIFF_ORDER", "ObjectiveDiff", "OpDiff", "diff_outcomes"]
 
 #: Canonical verdict ordering used for stable reports.
 OBJECTIVE_DIFF_ORDER = ("improved", "regressed", "unchanged")
+
+
+class _WeightCarrier(Protocol):
+    """Read-only view of anything carrying an objective id and a weight.
+
+    Satisfied by :class:`~.mission_replay.ObjectiveSpec` (the canonical case)
+    and by :class:`_UnityObjective` (the unknown-scenario fallback).
+    """
+
+    @property
+    def objective_id(self) -> str: ...  # pragma: no cover - structural stub
+
+    @property
+    def weight(self) -> float: ...  # pragma: no cover - structural stub
 
 
 @dataclass(frozen=True)
@@ -88,8 +103,13 @@ def diff_outcomes(
 
     Objectives are aligned by id, in the *original* result's order. Scores for
     the remount are looked up by id; the aggregate weight uses the original
-    scenario's objective weights. Objectives present on only one side are
-    ignored for the per-objective diff but reported via the ``diff`` ordering.
+    scenario's objective weights.
+
+    Objectives present on only one side are **skipped entirely**: they produce
+    no :class:`ObjectiveDiff` and contribute to none of the counts or averages.
+    A caller that needs to detect an objective-set mismatch must compare the
+    two results' objective ids itself — ``len(diff.diffs)`` below either
+    result's outcome count is the signal.
     """
     if not isinstance(original, ReplayResult) or not isinstance(remount, ReplayResult):
         raise ValueError("diff_outcomes requires two ReplayResult instances")
@@ -145,21 +165,26 @@ def diff_outcomes(
     )
 
 
-def _objective_specs(result: ReplayResult):
-    """Reconstruct the original objective weights from a replay result.
+def _objective_specs(result: ReplayResult) -> list[_WeightCarrier]:
+    """Recover per-objective weights for a replay result.
 
-    We read weights back from the canonical scenario injected by the engine via
-    the scenario name lookup — a lightweight registry so ``diff_outcomes`` does
-    not need the scenario object itself. Falls back to unity weight per
-    objective when the scenario is unknown.
+    A :class:`~.mission_replay.ReplayResult` does not carry the weights it was
+    scored with — only the scenario *name*. For the one canonical scenario the
+    package ships (``THUNDERBALL-65``) the weights are looked up from the
+    module constant; for any other scenario every objective gets unity weight,
+    which makes ``weighted_delta`` degrade gracefully to ``mean_delta`` rather
+    than fail.
+
+    Caveat this deliberately accepts: a caller-built scenario that reuses the
+    name ``THUNDERBALL-65`` with different weights would be scored against the
+    canonical weights. The alternative — threading the ``Scenario`` object
+    through :func:`diff_outcomes` — would change that function's signature,
+    which fleet consumers call.
     """
-    # The engine records command_score from the scenario's own weights; for the
-    # aggregate diff we rebuild weights from the canonical scenario constants.
     from never_say_never_again.mission_replay import LEGACY_SCENARIO
 
     if result.scenario == LEGACY_SCENARIO.name:
         return list(LEGACY_SCENARIO.objectives)
-    # Unknown scenario: infer unity weights so diffs stay well-defined.
     return [
         _UnityObjective(objective_id=outcome.objective_id)
         for outcome in result.outcomes

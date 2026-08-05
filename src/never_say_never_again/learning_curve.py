@@ -99,24 +99,29 @@ def iterations_to_target(
 ) -> int | None:
     """Smallest replay count reaching ``target``, or ``None`` if unreachable.
 
-    Returns 1 when the initial score already meets the target; ``None`` when
-    the asymptote (``final``) sits below the target or the rate is zero with an
-    unmet target (no learning happens).
+    Returns 1 when the initial score already meets the target. Returns ``None``
+    when the target is unreachable in finitely many replays, which covers three
+    cases:
+
+    * the asymptote sits strictly below the target (``final < target``);
+    * the asymptote *equals* the target (``final == target``) — the curve
+      approaches it but never attains it, so no finite replay count reaches it;
+    * the rate is zero or negative, so no learning accrues.
+
+    The ``final == target`` case is the subtle one: an earlier version returned
+    1 here, claiming the target was met on the first replay when in fact the
+    score at every finite iteration is strictly below the asymptote.
     """
     if initial >= target:
         return 1
-    if final < target:
+    if final <= target:
         return None
-    if rate == 0.0:
+    if rate <= 0.0:
         return None
-    denominator = final - initial
-    if denominator <= 0.0:
-        return None
-    ratio = (final - target) / denominator
-    if ratio <= 0.0:
-        return 1
-    iterations = math.ceil(-math.log(ratio) / rate)
-    return max(1, iterations)
+    # initial < target < final holds here, so the ratio is strictly in (0, 1)
+    # and the logarithm below is well defined and negative.
+    ratio = (final - target) / (final - initial)
+    return max(1, math.ceil(-math.log(ratio) / rate))
 
 
 @dataclass(frozen=True)
