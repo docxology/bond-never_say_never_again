@@ -8,13 +8,19 @@ flow through this module so the manuscript cannot drift from the code.
 The consuming orchestrator is ``scripts/z_generate_manuscript_variables.py``
 (thin wrapper); the live cross-reference gate lives in
 ``tests/test_manuscript_variables.py``.
+
+No token in this module reads the wall clock. The document date is
+``paper.date`` in ``manuscript/config.yaml`` — a committed, reviewable value —
+so regenerating the manuscript is byte-identical, which is what
+``manuscript/06_reproducibility.md`` claims and what
+``tests/test_regeneration_determinism.py`` enforces.
 """
 
 from __future__ import annotations
 
 import platform
 import re
-from datetime import datetime, timezone
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -51,7 +57,12 @@ from never_say_never_again.remount_risk import (
     canonical_risk_report,
 )
 
-__all__ = ["generate_variables", "load_manuscript_config", "resolve_manuscript_tree"]
+__all__ = [
+    "generate_variables",
+    "load_manuscript_config",
+    "manuscript_date",
+    "resolve_manuscript_tree",
+]
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_PATH = PACKAGE_ROOT / "manuscript" / "config.yaml"
@@ -75,6 +86,34 @@ def load_manuscript_config(config_path: str | Path | None = None) -> dict[str, A
             f"manuscript config must be a top-level mapping, got {type(data).__name__}"
         )
     return data
+
+
+def manuscript_date(config: dict[str, Any]) -> str:
+    """Return the committed document date (``paper.date``) as ``YYYY-MM-DD``.
+
+    This is the manuscript's *date of record*, not a generation timestamp. It
+    is read from the committed config and never from the wall clock, so two
+    regenerations at the same commit produce byte-identical artifacts. A
+    wall-clock stamp here would silently falsify the byte-level reproducibility
+    claim in ``manuscript/06_reproducibility.md``.
+    """
+    paper = config.get("paper", {})
+    if not isinstance(paper, dict):
+        raise ValueError("manuscript config 'paper' section must be a mapping")
+    raw = paper.get("date")
+    if isinstance(raw, date):  # PyYAML parses an unquoted date as datetime.date
+        return raw.isoformat()
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError(
+            "manuscript config 'paper.date' must be a YYYY-MM-DD string: it is "
+            "the committed document date and the manuscript reads no wall clock"
+        )
+    try:
+        return date.fromisoformat(raw.strip()).isoformat()
+    except ValueError as exc:
+        raise ValueError(
+            f"manuscript config 'paper.date' is not an ISO date: {raw!r}"
+        ) from exc
 
 
 def generate_variables(
@@ -182,9 +221,7 @@ def generate_variables(
             else str(learning.target_iteration)
         ),
         "PYTHON_VERSION": platform.python_version(),
-        "GENERATION_TIMESTAMP": datetime.now(timezone.utc).isoformat(
-            timespec="seconds"
-        ),
+        "MANUSCRIPT_DATE": manuscript_date(config),
     }
 
 

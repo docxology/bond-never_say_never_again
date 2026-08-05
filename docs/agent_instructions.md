@@ -37,8 +37,12 @@ orientation; this is the checklist.
 3. **No mocks.** No `MagicMock`, no `mocker.patch`, no `unittest.mock`, no stub
    objects standing in for collaborators. Real data and real computation.
 4. **Determinism.** No RNG, no wall-clock reads in persisted artifacts, no
-   network. Re-runs must be byte-identical. `MISSION_SEED` is provenance-only —
-   nothing samples, so changing it cannot change a result.
+   network. Re-runs must be byte-identical, and
+   `tests/test_regeneration_determinism.py` proves it by regenerating twice
+   across a clock-second boundary. Dates in the manuscript come from
+   `paper.date` in `manuscript/config.yaml`, never from `datetime.now()`.
+   `MISSION_SEED` is provenance-only — nothing samples, so changing it cannot
+   change a result.
 5. **No hand-authored metrics.** Every number in `manuscript/` is a `{{TOKEN}}`
    hydrated from `manuscript_variables.py`. A test scans the results section for
    bare decimals and fails on any it finds.

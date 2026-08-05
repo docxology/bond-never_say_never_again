@@ -26,7 +26,12 @@ The generated tokens are:
 - `ALLOC_ASSETS_USED`, `ALLOC_GAIN_RATIO`, `ALLOC_TOTAL_GAIN`
 - `LEARN_ITERATIONS`, `LEARN_FINAL_SCORE`, `LEARN_DELTA`,
   `LEARN_TARGET_ITERATION`
-- `PYTHON_VERSION`, `GENERATION_TIMESTAMP`
+- `PYTHON_VERSION`, `MANUSCRIPT_DATE`
+
+`MANUSCRIPT_DATE` is `paper.date` from `manuscript/config.yaml` — a committed
+value, not a wall-clock read. No token may be derived from the clock: the
+manuscript claims byte-level reproducibility, and
+`tests/test_regeneration_determinism.py` enforces it by regenerating twice.
 
 ## Citations
 

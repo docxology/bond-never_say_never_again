@@ -5,8 +5,17 @@
 REMOUNT commits to byte-level reproducibility. The domain core performs no
 random draws and no wall-clock reads, so replaying `{{SCENARIO_NAME}}` twice
 yields identical `ReplayResult` objects; rendering a figure twice yields
-identical PNG bytes. The only non-deterministic token, `GENERATION_TIMESTAMP`,
-is an audit stamp, not a computation input.
+identical PNG bytes.
+
+The claim covers the whole persisted artifact set — every file under
+`output/`: `data/manuscript_variables.json`, the resolved manuscript tree under
+`manuscript/`, and the four PNGs under `figures/`. No token reads the clock.
+The date on this document, `MANUSCRIPT_DATE`, is `paper.date` from the
+committed `manuscript/config.yaml`, so it changes only when a human changes it
+in version control — never merely because the generator ran again. That is
+enforced, not asserted: `tests/test_regeneration_determinism.py` runs the
+generator twice, more than a clock-second apart, into two separate output
+roots and compares the SHA-256 of every file.
 
 ## Provenance
 
@@ -38,5 +47,5 @@ uv run mypy src/ scripts/
 rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**'
 ```
 
-This manuscript is produced on Python {{PYTHON_VERSION}}, generated
-{{GENERATION_TIMESTAMP}}.
+This manuscript is produced on Python {{PYTHON_VERSION}}; its document date is
+{{MANUSCRIPT_DATE}}.

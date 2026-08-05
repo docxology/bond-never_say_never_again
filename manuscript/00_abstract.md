@@ -34,8 +34,8 @@ learning curve toward {{LEARN_FINAL_SCORE}} (delta {{LEARN_DELTA}}, reaching
 the target by iteration {{LEARN_TARGET_ITERATION}}).
 
 Everything computes deterministically — no random draws, no external calls — so
-the remount is reproducible to the byte on Python {{PYTHON_VERSION}} (generated
-{{GENERATION_TIMESTAMP}}). Every quantity above is a token injected from the
+the remount is reproducible to the byte on Python {{PYTHON_VERSION}} (document
+date {{MANUSCRIPT_DATE}}). Every quantity above is a token injected from the
 running code; none is transcribed by hand. The models themselves are standard
 and cited, not invented here: the contribution is their deterministic,
 auditable composition into a single remount pipeline, evaluated at one

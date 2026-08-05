@@ -10,6 +10,11 @@ drafts only). Writes ``output/data/manuscript_variables.json``, the resolved
 tree under ``output/manuscript/``, and four deterministic figures under
 ``output/figures/``: ``op_diff_scores.png``, ``learning_curve.png``,
 ``asset_allocation.png``, and ``asset_distribution.png``.
+
+``--output-root`` redirects the whole artifact set elsewhere. It exists so
+``tests/test_regeneration_determinism.py`` can regenerate twice into two clean
+roots and compare bytes, which is how the manuscript's byte-level
+reproducibility claim is enforced rather than merely stated.
 """
 
 from __future__ import annotations
@@ -49,10 +54,15 @@ def main() -> int:
         help="write even if tokens remain unresolved",
     )
     parser.add_argument("--config", default=None, help="path to manuscript/config.yaml")
+    parser.add_argument(
+        "--output-root",
+        default=None,
+        help="artifact root (default: <project>/output)",
+    )
     args = parser.parse_args()
 
     variables = generate_variables(config_path=args.config)
-    output_root = ROOT / "output"
+    output_root = Path(args.output_root) if args.output_root else ROOT / "output"
 
     variables_path = output_root / "data" / "manuscript_variables.json"
     variables_path.parent.mkdir(parents=True, exist_ok=True)

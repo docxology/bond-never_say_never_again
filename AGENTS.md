@@ -43,7 +43,14 @@ and Matplotlib.
 ## Determinism
 
 No random draws, no wall-clock reads in persisted artifacts, no network.
-Replays, diffs, and figures are byte-identical across runs. `MISSION_SEED`
+Replays, diffs, figures, `output/data/manuscript_variables.json`, and the
+resolved manuscript tree are all byte-identical across runs — enforced by
+`tests/test_regeneration_determinism.py`, which regenerates the whole artifact
+set twice, more than a clock-second apart, into two clean roots and compares
+SHA-256 per file. The manuscript's date is `paper.date` from
+`manuscript/config.yaml` (token `{{MANUSCRIPT_DATE}}`), a committed value; a
+generation timestamp read from the clock lived here until 2026-08-05 and made
+the byte-identical claim false, so do not reintroduce one. `MISSION_SEED`
 (defined in `mission_replay.py`, mirrored in `config.yaml`) is provenance-only:
 nothing samples, so changing it cannot change a result. `wall_time_s` is fixed
 at `0.0` deliberately — read it as "not recorded", not "instantaneous".
