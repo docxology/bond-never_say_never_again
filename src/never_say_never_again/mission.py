@@ -6,10 +6,17 @@ top-level ``MissionProvider`` class that satisfies the protocol and declares
 ``film = "never_say_never_again"``.
 
 The provider replays the canonical legacy scenario (THUNDERBALL-65) as a
-remount, diffs the original vs remount outcomes, and migrates the legacy
-intelligence assets — all deterministically. Gadgets (the engine, the scenario
-and the remount config) are registered with a :class:`bond_api.GadgetRegistry`
-so orchestrators and tooling can reach the film's working objects.
+remount, diffs the original vs remount outcomes, migrates the legacy
+intelligence assets, assesses the remount's detection risk and mission
+reliability, allocates the scarce remastered assets by marginal gain, and
+forecasts the replay learning curve — all deterministically. Gadgets (the
+engine, the scenario, the remount config, and the three deepened reports) are
+registered with a :class:`bond_api.GadgetRegistry` so orchestrators and tooling
+can reach the film's working objects.
+
+Public shape is stable across fleet consumers: ``GADGET_REGISTRY`` (module
+level), ``film``, and the five protocol methods are unchanged; only the mission
+internals deepen.
 """
 
 from __future__ import annotations
@@ -33,6 +40,19 @@ from bond_api.protocol import (
 from bond_api.registry import GadgetRegistry
 
 from never_say_never_again import __version__
+from never_say_never_again.asset_allocator import (
+    ALLOCATION_BUDGET,
+    ALLOCATION_POOL,
+    AllocationPlan,
+    canonical_allocation,
+)
+from never_say_never_again.learning_curve import (
+    LEARNING_ITERATIONS,
+    LEARNING_RATE,
+    LEARNING_TARGET_SCORE,
+    LearningReplayForecast,
+    canonical_learning_forecast,
+)
 from never_say_never_again.legacy_assets import (
     AssetCatalog,
     LegacyAsset,
@@ -45,11 +65,18 @@ from never_say_never_again.mission_replay import (
     ReplayEngine,
 )
 from never_say_never_again.op_diff import diff_outcomes
+from never_say_never_again.remount_risk import (
+    DETECTION_RATE,
+    REPLAY_CAMPAIGN_LENGTH,
+    RemountRiskReport,
+    canonical_risk_report,
+)
 
 __all__ = ["GADGET_REGISTRY", "MissionProvider"]
 
 #: The film's gadget registry. Orchestrators reach the film's working objects
-#: here (the replay engine, the canonical scenario, the remount config).
+#: here (the replay engine, the canonical scenario, the remount config, and
+#: the deepened risk/allocation/learning reports).
 GADGET_REGISTRY = GadgetRegistry()
 
 #: Deterministic RNG seed for the mission (0 disables randomness entirely —
@@ -84,6 +111,13 @@ _LEGACY_INDEX = (
     ),
 )
 
+#: Typed module-level references to the deepened canonical reports. The
+#: provider methods use these directly (never reaching through the gadget
+#: registry's opaque payloads), and they double as the gadget payloads.
+_RISK_REPORT: RemountRiskReport = canonical_risk_report()
+_ALLOCATION_PLAN: AllocationPlan = canonical_allocation()
+_LEARNING_FORECAST: LearningReplayForecast = canonical_learning_forecast()
+
 
 def _mission_input_hash(brief: MissionBrief) -> str:
     """Stable SHA-256 fingerprint of a mission brief (for provenance)."""
@@ -113,6 +147,9 @@ class MissionProvider:
                 "engine": self._engine,
                 "legacy_scenario": LEGACY_SCENARIO,
                 "remount_config": REMOUNT_CONFIG,
+                "remount_risk_report": _RISK_REPORT,
+                "allocation_plan": _ALLOCATION_PLAN,
+                "learning_forecast": _LEARNING_FORECAST,
             },
         )
 
@@ -122,7 +159,7 @@ class MissionProvider:
         return self._engine
 
     def brief(self) -> MissionBrief:
-        """Declare the REMOUNT mission: legacy replay, op diff, asset migration."""
+        """Declare the REMOUNT mission: replay, diff, migrate, risk, allocate, learn."""
         return MissionBrief(
             film=self.film,
             codename="REMOUNT",
@@ -130,6 +167,9 @@ class MissionProvider:
                 "replay the legacy operation as a remount",
                 "diff the original vs remount outcomes",
                 "migrate the legacy intelligence assets",
+                "assess remount detection risk and mission reliability",
+                "allocate remastered assets by marginal gain",
+                "forecast the replay learning curve",
             ),
             assets=(
                 Asset(
@@ -142,6 +182,14 @@ class MissionProvider:
                     name="remount",
                     payload={"intel_bonus": REMOUNT_CONFIG.intel_bonus},
                 ),
+                Asset(
+                    kind="model",
+                    name="risk",
+                    payload={
+                        "detection_rate": DETECTION_RATE,
+                        "replays": REPLAY_CAMPAIGN_LENGTH,
+                    },
+                ),
             ),
             constraints=(
                 Constraint(
@@ -153,7 +201,7 @@ class MissionProvider:
         )
 
     def recon(self, request: ReconRequest) -> ReconReport:
-        """Survey the request, the canonical scenario, and the determinism constraint."""
+        """Survey the request, scenario, assets, risk, and determinism constraints."""
         return ReconReport(
             findings=(
                 Finding(label="goal", detail=request.goal),
@@ -165,12 +213,24 @@ class MissionProvider:
                     label="assets",
                     detail=f"{len(_LEGACY_INDEX)} legacy intel dossiers queued for migration",
                 ),
+                Finding(
+                    label="risk",
+                    detail=f"detection hazard {DETECTION_RATE}/replay over {REPLAY_CAMPAIGN_LENGTH} replays",
+                ),
+                Finding(
+                    label="allocation",
+                    detail=f"{ALLOCATION_BUDGET} remastered assets across {len(ALLOCATION_POOL)} objectives",
+                ),
+                Finding(
+                    label="learning",
+                    detail=f"learning rate {LEARNING_RATE} over {LEARNING_ITERATIONS} iterations to target {LEARNING_TARGET_SCORE}",
+                ),
                 Finding(label="constraints", detail="deterministic execution required"),
             )
         )
 
     def plan(self, brief: MissionBrief) -> MissionPlan:
-        """Plan the four deterministic steps: replay, diff, migrate, verify."""
+        """Plan the seven deterministic steps: replay, diff, migrate, risk, allocate, learn, verify."""
         return MissionPlan(
             steps=(
                 Step(
@@ -184,12 +244,27 @@ class MissionProvider:
                     action="remaster_assets",
                     params={"records": len(_LEGACY_INDEX)},
                 ),
+                Step(
+                    name="assess_risk",
+                    action="escalation_hazard",
+                    params={"rate": DETECTION_RATE, "replays": REPLAY_CAMPAIGN_LENGTH},
+                ),
+                Step(
+                    name="allocate",
+                    action="marginal_gain",
+                    params={"budget": ALLOCATION_BUDGET},
+                ),
+                Step(
+                    name="forecast",
+                    action="learning_curve",
+                    params={"iterations": LEARNING_ITERATIONS},
+                ),
                 Step(name="verify", action="check_integrity", params={"success": True}),
             )
         )
 
     def execute(self, plan: MissionPlan) -> MissionOutcome:
-        """Run the replay → diff → migrate pipeline and return a deterministic outcome."""
+        """Run the replay → diff → migrate → risk → allocate → learn pipeline."""
         original = self._engine.replay(LEGACY_SCENARIO, _IDENTITY_CONFIG)
         remount = self._engine.replay(LEGACY_SCENARIO, REMOUNT_CONFIG)
         op_diff = diff_outcomes(original, remount)
@@ -201,7 +276,23 @@ class MissionProvider:
         }
         batch: MigrationBatch = catalog.migrate(new_contents)
 
-        success = op_diff.weighted_delta >= 0.0 and batch.verified
+        risk = _RISK_REPORT
+        allocation = _ALLOCATION_PLAN
+        learning = _LEARNING_FORECAST
+
+        best_objective = max(
+            allocation.assignments,
+            key=lambda objective_id: (
+                allocation.assignments[objective_id],
+                objective_id,
+            ),
+        )
+        success = (
+            op_diff.weighted_delta >= 0.0
+            and batch.verified
+            and risk.campaign_ev >= 0.0
+            and learning.delta >= 0.0
+        )
 
         results = {
             "steps_completed": len(plan.steps),
@@ -216,6 +307,17 @@ class MissionProvider:
             "migrated_assets": len(batch.assets),
             "migration_verified": batch.verified,
             "asset_fingerprint": catalog.stable_integrity(),
+            "risk_detection_probability": risk.detection_probability,
+            "risk_expected_operations": risk.expected_operations,
+            "mission_reliability": risk.reliability,
+            "campaign_ev": risk.campaign_ev,
+            "allocated_assets": sum(allocation.assignments.values()),
+            "allocation_gain_ratio": allocation.gain_ratio,
+            "allocation_total_gain": allocation.total_gain,
+            "allocation_best_objective": best_objective,
+            "learning_final_score": learning.final_score,
+            "learning_delta": learning.delta,
+            "learning_target_iteration": learning.target_iteration,
         }
 
         return MissionOutcome(
@@ -237,5 +339,8 @@ class MissionProvider:
                 "a remount improves outcome when intel reinforcement outpaces difficulty",
                 "op diffs must weight objectives by their relative importance",
                 "legacy assets must be re-fingerprinted before remount consumption",
+                "replay detection hazard accumulates — keep the remount campaign short",
+                "scarce remastered assets should follow marginal gain, not intuition",
+                "replay learning follows a diminishing-returns curve toward an asymptote",
             ),
         )

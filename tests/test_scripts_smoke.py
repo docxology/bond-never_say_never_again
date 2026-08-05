@@ -83,3 +83,5 @@ def test_z_generate_manuscript_variables_script():
     # Figures must render too.
     assert (PROJECT_ROOT / "output" / "figures" / "op_diff_scores.png").is_file()
     assert (PROJECT_ROOT / "output" / "figures" / "asset_distribution.png").is_file()
+    assert (PROJECT_ROOT / "output" / "figures" / "learning_curve.png").is_file()
+    assert (PROJECT_ROOT / "output" / "figures" / "asset_allocation.png").is_file()

@@ -37,11 +37,27 @@ def test_generate_variables_returns_expected_tokens():
         "NUM_OBJECTIVES",
         "MIGRATED_ASSET_COUNT",
         "ASSET_FINGERPRINT",
+        "RISK_DETECTION_PROBABILITY",
+        "RISK_EXPECTED_OPERATIONS",
+        "RISK_RELIABILITY",
+        "RISK_CAMPAIGN_EV",
+        "ALLOC_ASSETS_USED",
+        "ALLOC_GAIN_RATIO",
+        "ALLOC_TOTAL_GAIN",
+        "LEARN_ITERATIONS",
+        "LEARN_FINAL_SCORE",
+        "LEARN_DELTA",
+        "LEARN_TARGET_ITERATION",
     ):
         assert token in variables, f"missing token {token}"
     assert variables["FILM_IDENTITY"] == "Never Say Never Again"
     assert variables["MISSION_CODENAME"] == "REMOUNT"
     assert variables["OVERALL_VERDICT"] == "improved"
+    # Deepened tokens reflect the canonical deterministic reports.
+    assert float(variables["RISK_DETECTION_PROBABILITY"]) > 0.7
+    assert float(variables["RISK_CAMPAIGN_EV"]) > 0.0
+    assert float(variables["ALLOC_GAIN_RATIO"]) > 0.5
+    assert variables["LEARN_TARGET_ITERATION"] == "3"
 
 
 def test_load_manuscript_config_missing_file_raises(tmp_path: Path):

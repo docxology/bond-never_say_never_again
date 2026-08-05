@@ -1,6 +1,27 @@
 # never_say_never_again TODO
 
-Forward-only backlog for the REMOUNT film package (codename REMOUNT).
+Forward-only backlog for the REMOUNT film package (codename REMOUNT / REPLAY).
+
+## Built (phase 4 — deep improvement)
+
+- **Pure domain core** extended with three new deterministic modules
+  (`src/never_say_never_again/`, stdlib-only):
+  - `remount_risk.py` — exponential detection hazard, series/parallel
+    reliability blocks, campaign expected value (`RemountRiskReport`).
+  - `asset_allocator.py` — marginal-gain (submodular greedy, Nemhauser–Wolsey–
+    Fisher) allocation of scarce remastered assets.
+  - `learning_curve.py` — exponential replay-learning forecast of command
+    score, iteration-to-target solver.
+- **mission.py** deepened inside without changing public shape: seven plan
+  steps, six gadgets (risk/allocation/learning reports added), enriched
+  outcome results + lessons; `GADGET_REGISTRY`, `film`, and the five protocol
+  methods unchanged for fleet consumers.
+- **manuscript_variables.py** adds 11 risk/allocation/learning `{{TOKEN}}`s
+  sharing the canonical factories with `mission.py`.
+- **figures.py** adds `learning_curve.png` and `asset_allocation.png`.
+- **tests** add `test_remount_risk.py`, `test_asset_allocator.py`,
+  `test_learning_curve.py` and extend the provider/figure/manuscript smoke
+  tests.
 
 ## Built (phase 2)
 
@@ -22,16 +43,14 @@ Forward-only backlog for the REMOUNT film package (codename REMOUNT).
   `{{TOKEN}}`s; deterministic figures (`op_diff_scores.png`,
   `asset_distribution.png`).
 
-## Verification (measured)
+## Verification (measured, phase 4)
 
-- `uv run pytest tests/ --cov=src --cov-fail-under=90` — **60 passed**,
-  **97.24 %** coverage on `src/` (floor 90 %).
-- `ruff check` + `ruff format` clean on `src/ scripts/ tests/`.
-- `mypy src/ scripts/` — clean (0 issues, 15 files).
-- `rg template[_]code_project` — **zero** occurrences (built fresh; the only
-  lineage reference is this bracket-split verification command).
-- Because output/ is git-ignored, `execute.py` and the manuscript-variable
-  smoke tests leave the tree clean.
+- `uv run pytest tests/ --cov=src --cov-fail-under=90` — **99 passed**,
+  **98.11 %** coverage on `src/` (floor 90 %).
+- `ruff check` + `ruff format --check` clean on `src/ scripts/ tests/`.
+- `mypy src/ scripts/` — clean (19 files).
+- `rg template[_]code_project` — **zero** occurrences.
+- Because output/ is git-ignored, script smoke tests leave the tree clean.
 
 ## Declared integration points
 
@@ -49,3 +68,5 @@ Forward-only backlog for the REMOUNT film package (codename REMOUNT).
 2. No mock framework — real data + computation only.
 3. Manuscript metrics stay `{{TOKEN}}`-injected, never hand-authored.
 4. Deterministic: fixed seed, no wall-clock in persisted artifacts.
+5. `mission.py` public shape is stable: `GADGET_REGISTRY`, `film`, and the five
+   protocol methods must not change for fleet consumers.

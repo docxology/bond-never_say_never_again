@@ -27,3 +27,33 @@ claims:
     source: "len(LEGACY_INDEX) via mission.execute"
     token: "MIGRATED_ASSET_COUNT"
     determinism: true
+
+  - id: "CLAIM_DETECTION_P"
+    statement: "P(adversary alert) over the canonical replay campaign"
+    source: "canonical_risk_report().detection_probability"
+    token: "RISK_DETECTION_PROBABILITY"
+    determinism: true
+
+  - id: "CLAIM_RELIABILITY"
+    statement: "Block-structured mission reliability"
+    source: "canonical_risk_report().reliability"
+    token: "RISK_RELIABILITY"
+    determinism: true
+
+  - id: "CLAIM_CAMPAIGN_EV"
+    statement: "Campaign expected value (reward minus detection)"
+    source: "canonical_risk_report().campaign_ev"
+    token: "RISK_CAMPAIGN_EV"
+    determinism: true
+
+  - id: "CLAIM_ALLOC_GAIN"
+    statement: "Weighted score gain from marginal-gain allocation"
+    source: "canonical_allocation().total_gain"
+    token: "ALLOC_TOTAL_GAIN"
+    determinism: true
+
+  - id: "CLAIM_LEARN_TARGET"
+    statement: "First learning-curve iteration reaching the target score"
+    source: "canonical_learning_forecast().target_iteration"
+    token: "LEARN_TARGET_ITERATION"
+    determinism: true

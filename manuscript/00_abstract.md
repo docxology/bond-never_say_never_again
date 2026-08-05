@@ -20,6 +20,17 @@ leaves {{NUM_UNCHANGED}} unchanged. The engine migrates
 (SHA-256) so the remount can verify integrity before consumption
 (fingerprint {{ASSET_FINGERPRINT}}).
 
+The remount is not costless. Replaying the op accumulates a detection hazard:
+over a campaign of replay operations the probability of alerting the adversary
+reaches {{RISK_DETECTION_PROBABILITY}} (expected {{RISK_EXPECTED_OPERATIONS}}
+operations before alert), while the mission's block-structured reliability is
+{{RISK_RELIABILITY}} — a campaign expected value of {{RISK_CAMPAIGN_EV}}. Scarce
+remastered assets are therefore allocated by marginal gain
+({{ALLOC_ASSETS_USED}} assets deployed, {{ALLOC_GAIN_RATIO}} of the saturation
+ceiling), and repeated rehearsal pushes the command score along an exponential
+learning curve toward {{LEARN_FINAL_SCORE}} (delta {{LEARN_DELTA}}, reaching
+the target by iteration {{LEARN_TARGET_ITERATION}}).
+
 Everything computes deterministically — no random draws, no external calls — so
 the remount is reproducible to the byte on Python {{PYTHON_VERSION}} (generated
 {{GENERATION_TIMESTAMP}}).

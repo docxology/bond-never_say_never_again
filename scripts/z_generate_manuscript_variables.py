@@ -23,9 +23,15 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from never_say_never_again.asset_allocator import canonical_allocation
 from never_say_never_again.figures import (
+    render_allocation_figure,
     render_asset_distribution_figure,
+    render_learning_curve_figure,
     render_op_diff_figure,
+)
+from never_say_never_again.learning_curve import (
+    canonical_learning_forecast,
 )
 from never_say_never_again.legacy_assets import AssetCatalog, LegacyAsset
 from never_say_never_again.manuscript_variables import (
@@ -60,6 +66,13 @@ def main() -> int:
     )
 
     render_op_diff_figure(path=output_root / "figures" / "op_diff_scores.png")
+    render_learning_curve_figure(
+        canonical_learning_forecast(),
+        path=output_root / "figures" / "learning_curve.png",
+    )
+    render_allocation_figure(
+        canonical_allocation(), path=output_root / "figures" / "asset_allocation.png"
+    )
     catalog = AssetCatalog(
         [
             LegacyAsset(

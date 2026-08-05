@@ -16,6 +16,17 @@ Three lessons carry forward to any remount battalion:
 3. Legacy assets must be re-fingerprinted before remount consumption — you
    cannot trust a dossier you never re-verified.
 
+The deepened models add three more. A remount is not free: the accumulated
+detection hazard over {{RISK_EXPECTED_OPERATIONS}} expected operations
+({{RISK_DETECTION_PROBABILITY}} at campaign length) makes the campaign expected
+value {{RISK_CAMPAIGN_EV}} and *falling* as replays grow — so the remount must
+be decisive, not serial. Scarce remastered assets should follow marginal gain
+({{ALLOC_ASSETS_USED}} assets for {{ALLOC_GAIN_RATIO}} of the saturation
+ceiling) rather than intuition. And rehearsal follows a diminishing-returns
+learning curve toward {{LEARN_FINAL_SCORE}} (delta {{LEARN_DELTA}}, target at
+iteration {{LEARN_TARGET_ITERATION}}), so the marginal replay eventually stops
+paying.
+
 The engine's determinism makes every one of these claims independently
 auditable, and its purity (no `bond_api` imports in the domain core) keeps the
 analysis reusable beyond the BOND suite.

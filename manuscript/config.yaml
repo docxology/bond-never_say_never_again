@@ -51,7 +51,8 @@ testing:
   max_project_test_failures: 0
 
 # REMOUNT domain parameters — read by `src/never_say_never_again/` and the
-# mission provider.
+# mission provider. Canonical numeric constants live in the domain modules;
+# this block documents the experiment for human readers (not the token source).
 remount:
   film: "never_say_never_again"
   codename: "REMOUNT"
@@ -59,3 +60,15 @@ remount:
   sensitivity: 6.0
   success_threshold: 0.5
   seed: 13
+  risk:
+    detection_rate: 0.25
+    replay_campaign_length: 6
+    campaign_reward: 100.0
+    campaign_penalty: 100.0
+  allocation:
+    budget: 6
+  learning:
+    rate: 0.4
+    iterations: 8
+    bonus_cap: 0.30
+    target_score: 0.55

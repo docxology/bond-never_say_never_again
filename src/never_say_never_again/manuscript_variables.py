@@ -21,6 +21,8 @@ from typing import Any
 import yaml
 
 from never_say_never_again import __version__
+from never_say_never_again.asset_allocator import canonical_allocation
+from never_say_never_again.learning_curve import canonical_learning_forecast
 from never_say_never_again.legacy_assets import compute_integrity
 from never_say_never_again.mission_replay import (
     LEGACY_SCENARIO,
@@ -28,6 +30,7 @@ from never_say_never_again.mission_replay import (
     ReplayEngine,
 )
 from never_say_never_again.op_diff import diff_outcomes
+from never_say_never_again.remount_risk import canonical_risk_report
 
 __all__ = ["generate_variables", "load_manuscript_config", "resolve_manuscript_tree"]
 
@@ -84,6 +87,11 @@ def generate_variables(
     remount = engine.replay(LEGACY_SCENARIO, REMOUNT_CONFIG)
     op_diff = diff_outcomes(original, remount)
 
+    # Deepened canonical reports — same single-source factories as mission.py.
+    risk = canonical_risk_report()
+    allocation = canonical_allocation()
+    learning = canonical_learning_forecast(engine)
+
     # Deterministic asset registry for the migration summary.
     asset_payload = "".join(
         f"{o.objective_id}:{o.baseline_intel:.4f}" for o in LEGACY_SCENARIO.objectives
@@ -106,6 +114,17 @@ def generate_variables(
         "NUM_UNCHANGED": str(op_diff.unchanged),
         "MIGRATED_ASSET_COUNT": str(len(LEGACY_SCENARIO.objectives)),
         "ASSET_FINGERPRINT": asset_fingerprint,
+        "RISK_DETECTION_PROBABILITY": f"{risk.detection_probability:.4f}",
+        "RISK_EXPECTED_OPERATIONS": f"{risk.expected_operations:.2f}",
+        "RISK_RELIABILITY": f"{risk.reliability:.4f}",
+        "RISK_CAMPAIGN_EV": f"{risk.campaign_ev:+.2f}",
+        "ALLOC_ASSETS_USED": str(sum(allocation.assignments.values())),
+        "ALLOC_GAIN_RATIO": f"{allocation.gain_ratio:.4f}",
+        "ALLOC_TOTAL_GAIN": f"{allocation.total_gain:+.4f}",
+        "LEARN_ITERATIONS": str(learning.iterations),
+        "LEARN_FINAL_SCORE": f"{learning.final_score:.4f}",
+        "LEARN_DELTA": f"{learning.delta:+.4f}",
+        "LEARN_TARGET_ITERATION": str(learning.target_iteration or "unreached"),
         "PYTHON_VERSION": platform.python_version(),
         "GENERATION_TIMESTAMP": datetime.now(timezone.utc).isoformat(
             timespec="seconds"

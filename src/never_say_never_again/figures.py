@@ -18,6 +18,8 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 
+from never_say_never_again.asset_allocator import AllocationPlan
+from never_say_never_again.learning_curve import LearningReplayForecast
 from never_say_never_again.mission_replay import (
     LEGACY_SCENARIO,
     REMOUNT_CONFIG,
@@ -26,7 +28,12 @@ from never_say_never_again.mission_replay import (
     Scenario,
 )
 
-__all__ = ["render_asset_distribution_figure", "render_op_diff_figure"]
+__all__ = [
+    "render_allocation_figure",
+    "render_asset_distribution_figure",
+    "render_learning_curve_figure",
+    "render_op_diff_figure",
+]
 
 #: The identity config (no remount deltas) used as the ``original`` reference.
 _IDENTITY_CONFIG = RemountConfig(intel_bonus=0.0, doctrine=1.0, realism_ceiling=1.0)
@@ -115,6 +122,94 @@ def render_asset_distribution_figure(
         Path(path)
         if path is not None
         else _DEFAULT_OUTPUT / "figures" / "asset_distribution.png"
+    )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    return out
+
+
+def render_learning_curve_figure(
+    forecast: LearningReplayForecast,
+    *,
+    path: str | Path | None = None,
+) -> Path:
+    """Render the replay learning curve (command score vs replay iteration).
+
+    Plots the forecast scores with the initial score and the target score
+    marked. Writes to ``output/figures/learning_curve.png``.
+    """
+    iterations = list(range(1, forecast.iterations + 1))
+    fig, ax = plt.subplots(figsize=(7, 4.4))
+    ax.plot(
+        iterations, forecast.scores, marker="o", color="#1e3a8a", label="command score"
+    )
+    ax.axhline(
+        forecast.initial_score,
+        color="#7c2d12",
+        linestyle="--",
+        label=f"initial {forecast.initial_score:.3f}",
+    )
+    if forecast.target_iteration is not None:
+        ax.axvline(
+            forecast.target_iteration,
+            color="#15803d",
+            linestyle=":",
+            label=f"target at iteration {forecast.target_iteration}",
+        )
+    ax.set_xlabel("Replay iteration")
+    ax.set_ylabel("Command score")
+    ax.set_ylim(0.0, 1.0)
+    ax.set_title("REMOUNT — replay learning curve")
+    ax.legend()
+    fig.tight_layout()
+
+    out = (
+        Path(path)
+        if path is not None
+        else _DEFAULT_OUTPUT / "figures" / "learning_curve.png"
+    )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    return out
+
+
+def render_allocation_figure(
+    plan: AllocationPlan,
+    *,
+    path: str | Path | None = None,
+) -> Path:
+    """Render the asset allocation (assets assigned per objective).
+
+    Bars show assigned asset counts; a dashed line marks the allocated total.
+    Writes to ``output/figures/asset_allocation.png``.
+    """
+    objective_ids = sorted(plan.assignments)
+    values = [plan.assignments[objective_id] for objective_id in objective_ids]
+    positions = list(range(len(objective_ids)))
+    allocated_total = sum(plan.assignments.values())
+    fig, ax = plt.subplots(figsize=(7, 4.4))
+    ax.bar(positions, values, color="#1e3a8a")
+    ax.axhline(
+        allocated_total,
+        color="#7c2d12",
+        linestyle="--",
+        label=f"allocated {allocated_total} assets",
+    )
+    ax.set_xticks(positions)
+    ax.set_xticklabels(objective_ids, rotation=15, ha="right")
+    ax.set_ylabel("Assets assigned")
+    ax.set_title(
+        f"REMOUNT — marginal-gain allocation (gain ratio {plan.gain_ratio:.2f})"
+    )
+    ax.legend()
+    fig.tight_layout()
+
+    out = (
+        Path(path)
+        if path is not None
+        else _DEFAULT_OUTPUT / "figures" / "asset_allocation.png"
     )
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=300, bbox_inches="tight")

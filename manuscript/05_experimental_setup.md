@@ -14,6 +14,15 @@ difficulties, and baseline intel, plus an identity config
 - Remount intel bonus `0.15`, doctrine `1.0`, realism ceiling `1.0`.
 - Deterministic seed `13` (provenance-only: the mission makes no random draws).
 - SHA-256 fingerprints over NFC-normalized UTF-8 content.
+- Risk: detection rate `0.25`/replay, campaign length `6`, reward `100`,
+  penalty `100`, reliability blocks (intel 2 paths, insertion 1, extraction 3).
+- Allocation: budget `6` assets over 4 objectives (concave curves).
+- Learning: rate `0.4`, `8` iterations, bonus cap `0.30`, target `0.55`.
+
+All canonical numeric constants live in the domain modules
+(`remount_risk.py`, `asset_allocator.py`, `learning_curve.py`), shared by the
+mission adapter, the manuscript tokens, and the figures — no duplicated
+numbers.
 
 ## Fixtures and isolation
 

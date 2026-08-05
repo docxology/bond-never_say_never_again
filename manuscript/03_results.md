@@ -32,3 +32,31 @@ each re-fingerprinted on migration. The catalog-wide stable fingerprint is
 `{{ASSET_FINGERPRINT}}`.
 
 ![Migrated asset distribution](figures/asset_distribution.png)
+
+## Remount risk
+
+Over a campaign of replay operations, the accumulated detection hazard reaches
+{{RISK_DETECTION_PROBABILITY}} (expected {{RISK_EXPECTED_OPERATIONS}} operations
+before alert), whereas the block-structured mission reliability is
+{{RISK_RELIABILITY}}. At the canonical reward/penalty the campaign expected
+value is {{RISK_CAMPAIGN_EV}} — positive for a short, decisive re-op, but
+strictly *decreasing* as replays accumulate because detection dominates the
+downside. This is the engine's central caveat to the remount premise: *never
+say never again* — but do not keep saying it into a long campaign.
+
+## Asset allocation
+
+Allocating the scarce remastered assets by marginal gain deploys
+{{ALLOC_ASSETS_USED}} assets and recovers {{ALLOC_TOTAL_GAIN}} of weighted
+command score, i.e. {{ALLOC_GAIN_RATIO}} of the full-saturation ceiling.
+
+![Marginal-gain asset allocation](figures/asset_allocation.png)
+
+## Replay learning curve
+
+Forecasting repeated rehearsal over {{LEARN_ITERATIONS}} iterations raises the
+command score from the baseline toward {{LEARN_FINAL_SCORE}} (delta
+{{LEARN_DELTA}}), and the target is reached at iteration
+{{LEARN_TARGET_ITERATION}}.
+
+![Replay learning curve](figures/learning_curve.png)

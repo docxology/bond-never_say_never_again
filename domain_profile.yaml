@@ -1,8 +1,9 @@
 # Domain profile — never_say_never_again (REMOUNT)
 # Declarative advisory controls. Validation inputs only; do not execute agents.
-domain: "legacy mission replay / op diff / asset migration"
+domain: "legacy mission replay / op diff / asset migration / remount risk / allocation / replay learning"
 film: "never_say_never_again"
 codename: "REMOUNT"
+phase4_codename: "REPLAY"
 
 review_gates:
   - "pytest --cov=src --cov-fail-under=90"
@@ -18,6 +19,8 @@ source_policy:
 artifact_expectations:
   - "output/figures/op_diff_scores.png"
   - "output/figures/asset_distribution.png"
+  - "output/figures/learning_curve.png"
+  - "output/figures/asset_allocation.png"
   - "output/data/manuscript_variables.json"
   - "output/data/remount_outcome.json"
 
@@ -25,3 +28,6 @@ benchmark_rubric:
   - "command_score improves original -> remount"
   - "weighted delta sign determines overall verdict"
   - "asset migration preserves integrity fingerprints"
+  - "campaign EV declines with replay count (detection dominates)"
+  - "asset allocation follows marginal gain with diminishing returns"
+  - "learning forecast rises monotonically toward its asymptote"

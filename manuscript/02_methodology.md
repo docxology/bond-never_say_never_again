@@ -42,6 +42,38 @@ Given the original and remount replays, `diff_outcomes` aligns objectives by id
 objective weights, and the overall verdict follows the sign of
 `weighted_delta`.
 
+## Remount risk (escalation hazard and reliability)
+
+`remount_risk.py` models the price of a replay. Detection follows a memoryless
+exponential (Poisson) hazard — `P(alert within N replays) = 1 - exp(-rate * N)`
+with expected operations before alert `1 / rate` — so repeated replays
+monotonically raise the chance of alerting the adversary. Mission success is
+modeled as a reliability block diagram: a *series* of *parallel* blocks, where
+each block (intel acquisition, insertion, extraction) succeeds if any of its
+redundant paths succeeds [@barlow1975reliability]. The campaign expected value
+`P(success) * reward - P(detected) * penalty` then prices the whole replay
+campaign.
+
+## Asset allocation (marginal gain)
+
+`asset_allocator.py` spends scarce remastered assets. Each objective has a
+concave improvement curve `cap * (1 - exp(-e * k))` in the number `k` of
+assigned assets — strictly diminishing returns, hence submodular. A
+deterministic greedy allocates each of the `budget` assets to the objective
+with the largest capped marginal gain (ties broken by objective order),
+achieving the canonical `(1 - 1/e)` approximation of
+Nemhauser–Wolsey–Fisher [@nemhauser1978submodular].
+
+## Replay learning curve
+
+`learning_curve.py` forecasts how rehearsal improves the remount. The command
+score follows an exponential learning curve
+`final - (final - initial) * exp(-rate * n)` from the baseline replay
+(`initial`) toward a fully-reinforced replay asymptote (`final`) [@wright1936learning];
+the solver
+returns the first iteration reaching a target score, or marks the target
+unreachable when the asymptote falls short.
+
 ## Legacy asset migration
 
 Each legacy dossier is a `LegacyAsset` carrying a declared SHA-256 integrity

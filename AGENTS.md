@@ -13,7 +13,7 @@ op diff, and legacy asset migration** (a software remount of *Thunderball*).
 
 | Surface | Rule |
 | --- | --- |
-| `src/never_say_never_again/mission_replay.py`, `op_diff.py`, `legacy_assets.py` (mathematical core) | Pure deterministic logic — **no** `bond_api`, **no** `infrastructure` imports |
+| `src/never_say_never_again/mission_replay.py`, `op_diff.py`, `legacy_assets.py`, `remount_risk.py`, `asset_allocator.py`, `learning_curve.py` (mathematical core) | Pure deterministic logic — **no** `bond_api`, **no** `infrastructure` imports |
 | `src/never_say_never_again/mission.py` | Thin `bond_api` adapter: implements frozen `MissionProvider`, registers gadgets |
 | `src/never_say_never_again/manuscript_variables.py` | Hydrates `{{TOKEN}}`s from `manuscript/config.yaml` + domain surface |
 | `src/never_say_never_again/figures.py` | Deterministic Matplotlib (Agg) to `output/figures/` |

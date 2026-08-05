@@ -15,6 +15,8 @@ primary_metric: "command_score (weighted mean of objective scores)"
 expected_figures:
   - "output/figures/op_diff_scores.png"
   - "output/figures/asset_distribution.png"
+  - "output/figures/learning_curve.png"
+  - "output/figures/asset_allocation.png"
 
 expected_tables:
   - "manuscript/03_results.md: command score original vs remount"
@@ -24,6 +26,9 @@ baseline: "original command score (identity config)"
 ablation:
   - "intel_bonus = 0.0 vs 0.15"
   - "realism_ceiling capping effective intel"
+  - "replay campaign length vs campaign expected value (risk)"
+  - "allocation budget vs gain ratio (marginal gain)"
+  - "learning iterations vs target iteration (learning curve)"
 
 determinism:
   seed: 13

@@ -42,7 +42,14 @@ uv run mypy src/ scripts/
   verdicts + weighted aggregate).
 - `legacy_assets.py` — SHA-256 fingerprinting, tamper detection, `remaster`,
   `AssetCatalog` batch migration.
-- `mission.py` — the thin `bond_api.MissionProvider` adapter + gadgets.
+- `remount_risk.py` — exponential detection hazard, series/parallel
+  reliability blocks, campaign expected value.
+- `asset_allocator.py` — greedy marginal-gain (submodular) allocation of scarce
+  assets.
+- `learning_curve.py` — exponential replay-learning forecast + iteration-to-
+  target solver.
+- `mission.py` — the thin `bond_api.MissionProvider` adapter + gadgets
+  (codename REMOUNT / REPLAY).
 
 ## Pitfalls
 
