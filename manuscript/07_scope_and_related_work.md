@@ -4,9 +4,10 @@
 
 This package is strictly a BOND suite film package. Its scope is exactly its
 own directory; it implements the frozen `bond_api` mission protocol as a thin
-adapter (`mission.py`) on top of a pure, infrastructure-free domain core of six
-modules (`mission_replay.py`, `op_diff.py`, `legacy_assets.py`,
-`remount_risk.py`, `asset_allocator.py`, `learning_curve.py`). It does not
+adapter (`mission.py`) on top of a pure, infrastructure-free domain core of
+seven modules (`mission_replay.py`, `op_diff.py`, `legacy_assets.py`,
+`remount_risk.py`, `asset_allocator.py`, `learning_curve.py`,
+`sensitivity.py`). It does not
 attempt to be a general simulation framework or a full intelligence management
 system.
 
@@ -51,5 +52,8 @@ These are real bounds on what the results support, not caveats-as-decoration.
   digest together.
 - An un-scanned asset (`integrity is None`) is treated as self-consistent by
   design, so absence of a fingerprint is not evidence of integrity.
-- The risk, allocation, and learning models are evaluated at a single canonical
-  parameter set. No sensitivity analysis over that parameter set is reported.
+- The risk, allocation, and learning models are evaluated at one canonical
+  parameter set, and the sensitivity analysis in `03_results.md` sweeps **one
+  parameter at a time** (OAT) rather than the joint space. It bounds how far the
+  headline conclusions hold under single-parameter variation; it is not a global
+  variance decomposition, so it cannot rank second-order parameter interactions.

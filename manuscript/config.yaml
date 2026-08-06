@@ -90,3 +90,8 @@ remount:
     iterations: 8
     bonus_cap: 0.30
     target_score: 0.55
+  robustness:
+    sweep_sensitivity: [0.5, 20.0]
+    sweep_detection_rate: [0.05, 1.0]
+    sweep_learning_rate: [0.05, 1.0]
+    steps: 401

@@ -39,6 +39,7 @@ __all__ = [
     "canonical_risk_report",
     "detection_probability",
     "expected_operations_before_alert",
+    "optimal_campaign_length",
     "parallel_reliability",
     "series_reliability",
 ]
@@ -56,6 +57,11 @@ CAMPAIGN_PENALTY = 100.0
 #: Canonical reliability blocks: a series of parallel blocks, each block a
 #: tuple of per-path success probabilities. (intel acquisition has two
 #: redundant paths; insertion one path; extraction three.)
+#: Upper limit for the :func:`optimal_campaign_length` scan. Generous but
+#: bounded so a shrinking detection horizon cannot spin indefinitely.
+_MAX_CROSSING_SCAN = 10000
+
+
 REMOUNT_RISK_BLOCKS: tuple[tuple[float, ...], ...] = (
     (0.86, 0.92),
     (0.97,),
@@ -73,8 +79,13 @@ def _require_probability(value: float, label: str) -> None:
 
 
 def _require_non_negative(value: float, label: str) -> None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0.0:
-        raise ValueError(f"{label} must be a non-negative number")
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(float(value))
+        or value < 0.0
+    ):
+        raise ValueError(f"{label} must be a finite non-negative number")
 
 
 def detection_probability(rate: float, replays: int) -> float:
@@ -91,8 +102,13 @@ def detection_probability(rate: float, replays: int) -> float:
 
 def expected_operations_before_alert(rate: float) -> float:
     """Expected number of replay operations before the first alert (1/rate)."""
-    if isinstance(rate, bool) or not isinstance(rate, (int, float)) or rate <= 0.0:
-        raise ValueError("rate must be a positive number")
+    if (
+        isinstance(rate, bool)
+        or not isinstance(rate, (int, float))
+        or not math.isfinite(float(rate))
+        or rate <= 0.0
+    ):
+        raise ValueError("rate must be a finite positive number")
     return 1.0 / rate
 
 
@@ -147,6 +163,50 @@ def campaign_expected_value(
     _require_non_negative(reward, "reward")
     _require_non_negative(penalty, "penalty")
     return success_probability * reward - detection_probability_value * penalty
+
+
+def optimal_campaign_length(
+    *,
+    rate: float,
+    blocks: tuple[tuple[float, ...], ...],
+    reward: float,
+    penalty: float,
+) -> int:
+    """Smallest replay count ``N`` at which the campaign expected value (first)
+    becomes non-positive, i.e. the last length at which the campaign still pays.
+
+    ``campaign_ev`` is strictly decreasing in the replay count ``N`` (reliability
+    is constant in ``N`` while the detection term ``1 - exp(-rate * N)`` rises),
+    so the crossing is unique. Returns ``1`` when even a single replay is
+    already non-positive. Raises ``ValueError`` when the campaign never crosses
+    into non-positive territory within ``1.._MAX_CROSSING_SCAN`` replays (the
+    asymptote ``reliability * reward - penalty`` stays positive).
+    """
+    _require_non_negative(rate, "rate")
+    _require_non_negative(reward, "reward")
+    _require_non_negative(penalty, "penalty")
+    reliability = block_reliability(blocks)
+
+    def _ev(n: int) -> float:
+        return campaign_expected_value(
+            reliability,
+            detection_probability(rate, n),
+            reward,
+            penalty,
+        )
+
+    # Scan upward from 1. The sequence is strictly decreasing, so the first
+    # non-positive value is the crossing. The bound is generous: detection
+    # probability reaches 1 - exp(-rate * N) which drives EV toward the
+    # asymptote; with finite reward/penalty the crossing is reached quickly or
+    # the asymptote is positive (never crosses).
+    for n in range(1, _MAX_CROSSING_SCAN):
+        if _ev(n) <= 0.0:
+            return n
+    raise ValueError(
+        "campaign never crosses non-positive within "
+        f"{_MAX_CROSSING_SCAN - 1} replays at the given parameters"
+    )
 
 
 @dataclass(frozen=True)

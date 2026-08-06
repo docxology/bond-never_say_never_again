@@ -55,8 +55,23 @@ LEARNING_TARGET_SCORE = 0.55
 
 
 def _require_non_negative(value: float, label: str) -> None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0.0:
-        raise ValueError(f"{label} must be a non-negative number")
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(float(value))
+        or value < 0.0
+    ):
+        raise ValueError(f"{label} must be a finite non-negative number")
+
+
+def _require_finite(value: float, label: str) -> None:
+    """Reject NaN and non-finite values, which would otherwise propagate."""
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(float(value))
+    ):
+        raise ValueError(f"{label} must be a finite number")
 
 
 def exponential_learning(
@@ -67,6 +82,8 @@ def exponential_learning(
     ``final - (final - initial) * exp(-rate * iteration)``: monotonically
     approaches ``final`` with diminishing per-iteration gains.
     """
+    _require_finite(initial, "initial")
+    _require_finite(final, "final")
     _require_non_negative(rate, "rate")
     if isinstance(iteration, bool) or not isinstance(iteration, int) or iteration < 0:
         raise ValueError("iteration must be a non-negative integer")
@@ -99,6 +116,10 @@ def iterations_to_target(
 ) -> int | None:
     """Smallest replay count reaching ``target``, or ``None`` if unreachable.
 
+    All inputs must be finite numbers. ``rate`` may be zero or negative —
+    those are valid inputs that make the target unreachable — but not NaN or
+    infinite.
+
     Returns 1 when the initial score already meets the target. Returns ``None``
     when the target is unreachable in finitely many replays, which covers three
     cases:
@@ -112,6 +133,10 @@ def iterations_to_target(
     1 here, claiming the target was met on the first replay when in fact the
     score at every finite iteration is strictly below the asymptote.
     """
+    _require_finite(initial, "initial")
+    _require_finite(final, "final")
+    _require_finite(rate, "rate")
+    _require_finite(target, "target")
     if initial >= target:
         return 1
     if final <= target:

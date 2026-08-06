@@ -24,6 +24,7 @@ from never_say_never_again.remount_risk import (
     canonical_risk_report,
     detection_probability,
     expected_operations_before_alert,
+    optimal_campaign_length,
     parallel_reliability,
     series_reliability,
 )
@@ -224,6 +225,64 @@ def test_campaign_ev_crosses_zero_and_stays_negative():
     assert detection_probability(DETECTION_RATE, crossing - 1) < reliability
 
 
+def test_optimal_campaign_length_is_the_first_non_positive_crossing():
+    """The model now locates its own EV zero crossing.
+
+    Previously the campaign-short crossing was found only by a test scanning
+    integers. The canonical crossing is now a model output
+    (``optimal_campaign_length``); the independent scan stays as an oracle so
+    the function is checked against a separately-derived answer.
+    """
+    reliability = block_reliability(REMOUNT_RISK_BLOCKS)
+
+    def ev(n: int) -> float:
+        return campaign_expected_value(
+            reliability,
+            detection_probability(DETECTION_RATE, n),
+            CAMPAIGN_REWARD,
+            CAMPAIGN_PENALTY,
+        )
+
+    oracle = next(n for n in range(1, 200) if ev(n) <= 0.0)
+    func = optimal_campaign_length(
+        rate=DETECTION_RATE,
+        blocks=REMOUNT_RISK_BLOCKS,
+        reward=CAMPAIGN_REWARD,
+        penalty=CAMPAIGN_PENALTY,
+    )
+    assert func == oracle
+    assert ev(func) <= 0.0
+    assert ev(func - 1) > 0.0
+    assert func > REPLAY_CAMPAIGN_LENGTH
+
+
+def test_optimal_campaign_length_boundary_when_single_replay_already_negative():
+    """A very high rate makes even one replay non-positive -> crossing = 1."""
+    crossing = optimal_campaign_length(
+        rate=10.0,
+        blocks=REMOUNT_RISK_BLOCKS,
+        reward=CAMPAIGN_REWARD,
+        penalty=CAMPAIGN_PENALTY,
+    )
+    assert crossing == 1
+
+
+def test_optimal_campaign_length_raises_when_crossing_never_happens():
+    """A zero penalty makes EV strictly positive forever -> no crossing.
+
+    With ``penalty == 0`` the campaign expected value is ``reliability *
+    reward`` at every replay count (the detection term contributes nothing), so
+    it never becomes non-positive and the solver must raise, not loop forever.
+    """
+    with pytest.raises(ValueError, match="never crosses"):
+        optimal_campaign_length(
+            rate=DETECTION_RATE,
+            blocks=REMOUNT_RISK_BLOCKS,
+            reward=CAMPAIGN_REWARD,
+            penalty=0.0,
+        )
+
+
 def test_redundancy_strictly_helps_and_series_strictly_hurts():
     """Positive control on the block model: structure must actually matter."""
     single = block_reliability(((0.8,),))
@@ -232,3 +291,22 @@ def test_redundancy_strictly_helps_and_series_strictly_hurts():
     assert redundant > single > chained
     assert redundant == pytest.approx(1 - 0.2 * 0.2, abs=TOL)
     assert chained == pytest.approx(0.64, abs=TOL)
+
+
+def test_non_finite_inputs_are_rejected():
+    """NaN / infinity must fail loudly, not yield NaN probabilities or EV.
+
+    Regression for the same guard class as mission_replay: the rate, reward,
+    and penalty checks compared ``< 0.0`` / ``<= 0.0``, which NaN slips past
+    silently. Each must now demand a finite number.
+    """
+    non_finite = (float("nan"), float("inf"), float("-inf"))
+    for bad in non_finite:
+        with pytest.raises(ValueError, match="finite"):
+            detection_probability(bad, 5)
+        with pytest.raises(ValueError, match="finite"):
+            expected_operations_before_alert(bad)
+        with pytest.raises(ValueError, match="finite"):
+            campaign_expected_value(0.5, 0.2, bad, 100.0)
+        with pytest.raises(ValueError, match="finite"):
+            campaign_expected_value(0.5, 0.2, 100.0, bad)

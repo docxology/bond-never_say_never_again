@@ -12,7 +12,7 @@ The canonical sections, all present and all rendered in this order:
 | `00_abstract.md` | The whole result in one page, tokens only |
 | `01_introduction.md` | The film's remount premise and the six capabilities |
 | `02_methodology.md` | Each model, its equation, and its citation |
-| `03_results.md` | Measured outputs, tables, and the four figures |
+| `03_results.md` | Measured outputs, tables, and the five figures |
 | `04_conclusion.md` | What the evidence supports and what it does not |
 | `05_experimental_setup.md` | The canonical dataset and every parameter |
 | `06_reproducibility.md` | Determinism, provenance, verification commands |
@@ -67,6 +67,6 @@ uv run python scripts/z_generate_manuscript_variables.py
 ```
 
 Writes `output/data/manuscript_variables.json`, the resolved tree under
-`output/manuscript/`, and the four figures under `output/figures/`. All of
+`output/manuscript/`, and the five figures under `output/figures/`. All of
 `output/` is git-ignored. Add `--allow-draft` only for a deliberate
 work-in-progress; it disables the strict token gate.

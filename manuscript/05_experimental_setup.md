@@ -31,11 +31,16 @@ runs on — this list cannot drift from the implementation.
   `{{ALLOC_OBJECTIVE_COUNT}}` objectives (concave curves).
 - Learning: rate `{{LEARN_RATE}}`, `{{LEARN_ITERATIONS}}` iterations, bonus cap
   `{{LEARN_BONUS_CAP}}`, target `{{LEARN_TARGET_SCORE}}`.
+- Sensitivity sweep ranges: `{{SENS_SWEEP_SENSITIVITY}}` (success sensitivity),
+  `{{SENS_SWEEP_DETECTION_RATE}}` (detection rate), and
+  `{{SENS_SWEEP_LEARNING_RATE}}` (learning rate), each sampled at
+  `{{SENS_SWEEP_STEPS}}` evenly spaced points.
 
 All canonical numeric constants live in the domain modules
 (`mission_replay.py`, `legacy_assets.py`, `remount_risk.py`,
-`asset_allocator.py`, `learning_curve.py`), shared by the mission adapter, the
-manuscript tokens, and the figures — no duplicated numbers.
+`asset_allocator.py`, `learning_curve.py`, `sensitivity.py`), shared by the
+mission adapter, the manuscript tokens, and the figures — no duplicated
+numbers.
 `manuscript/config.yaml` mirrors the same values for human readers, and
 `tests/test_manuscript_variables.py` asserts the mirror matches the code, so a
 constant changed in one place and not the other fails the suite.

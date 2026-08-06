@@ -86,6 +86,7 @@ def test_two_regenerations_are_byte_identical(tmp_path: Path):
         "learning_curve.png",
         "asset_allocation.png",
         "asset_distribution.png",
+        "sensitivity_sweep.png",
     ):
         assert f"figures/{figure}" in first
 

@@ -1,7 +1,7 @@
 # Architecture — Never Say Never Again (REMOUNT)
 
 Nine modules in `src/never_say_never_again/`, in two tiers: a pure domain core
-of six, and three modules that adapt that core to the outside world (the BOND
+of seven, and three modules that adapt that core to the outside world (the BOND
 protocol, the manuscript, and Matplotlib). Nothing in the core knows any of
 those three exist.
 
@@ -20,7 +20,8 @@ src/never_say_never_again/
   ├── legacy_assets.py        CORE  intel migration + integrity
   ├── remount_risk.py         CORE  detection hazard, reliability, campaign EV
   ├── asset_allocator.py      CORE  marginal-gain allocation
-  └── learning_curve.py       CORE  replay-learning forecast
+  ├── learning_curve.py       CORE  replay-learning forecast
+  └── sensitivity.py          CORE  one-at-a-time sensitivity analysis
 ```
 
 Dependency direction is strictly downward. Core modules import stdlib and, in
@@ -180,10 +181,11 @@ leftover `{{...}}` so a raw brace can never reach the PDF.
 
 ### `figures.py` — deterministic rendering
 
-Four Agg-backend figures, each taking an explicit output path and returning it:
+Five Agg-backend figures, each taking an explicit output path and returning it:
 `render_op_diff_figure` (grouped bars, original vs remount),
 `render_asset_distribution_figure` (migrated assets per kind),
-`render_learning_curve_figure` (forecast with initial and target marked), and
+`render_learning_curve_figure` (forecast with initial and target marked),
+`render_sensitivity_figure` (robust sub-ranges per swept parameter), and
 `render_allocation_figure` (assets per objective). Same inputs, same bytes.
 
 ## Data flow, end to end
@@ -215,7 +217,7 @@ set is `00_preflight.py` (protocol conformance), one script per mission stage
 (`brief`, `recon`, `plan`, `execute`, `debrief`), `run_mission.py` (the full
 five-stage flow via `bond_api.run_mission`), and
 `z_generate_manuscript_variables.py` (tokens, resolved manuscript tree, and the
-four figures). All writes go under `output/`, which is git-ignored, so running
+five figures). All writes go under `output/`, which is git-ignored, so running
 them leaves the tree clean.
 
 ## Determinism

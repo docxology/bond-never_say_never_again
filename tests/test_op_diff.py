@@ -219,3 +219,22 @@ def test_unknown_scenario_falls_back_to_unity_weights():
     # though the scenario's own weights differ by a factor of 99.
     assert diff.weighted_delta == pytest.approx(diff.mean_delta, abs=TOL)
     assert diff.overall == "improved"
+
+
+def test_negative_epsilon_is_rejected():
+    """A negative epsilon would silently invert every verdict.
+
+    The verdict test is ``delta > epsilon`` (improved) / ``delta < -epsilon``
+    (regressed), so a negative epsilon makes even a zero delta classify as
+    improved — an identical remount would report itself improved. epsilon is a
+    threshold, so it must be a finite non-negative number.
+    """
+    engine = ReplayEngine()
+    identity = RemountConfig(intel_bonus=0.0, doctrine=1.0, realism_ceiling=1.0)
+    original = engine.replay(LEGACY_SCENARIO, identity)
+    remount = engine.replay(LEGACY_SCENARIO, REMOUNT_CONFIG)
+    for bad in (-1.0, 0.0 - 1e-12, float("nan"), float("inf"), -float("inf")):
+        with pytest.raises(ValueError, match="epsilon"):
+            diff_outcomes(original, remount, epsilon=bad)
+    # A valid non-negative epsilon still works.
+    assert diff_outcomes(original, remount, epsilon=0.0).overall == "improved"

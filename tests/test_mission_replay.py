@@ -214,3 +214,32 @@ def test_engine_defaults_come_from_the_module_constants():
     result_a = engine.replay(LEGACY_SCENARIO, REMOUNT_CONFIG)
     result_b = tuned.replay(LEGACY_SCENARIO, REMOUNT_CONFIG)
     assert result_a == result_b
+
+
+def test_validation_rejects_non_finite_parameters():
+    """NaN and infinity must be rejected, not propagate into the model.
+
+    A regression against a real defect class: the positivity and non-negative
+    guards compared ``value <= 0.0`` / ``value < 0.0``, which NaN (and signed
+    infinity) fool — every NaN comparison is False, so a NaN weight, doctrine,
+    or sensitivity sailed through validation and produced NaN scores, EV, and
+    allocations. Every parameter check must now require a *finite* number.
+    """
+    non_finite = (float("nan"), float("inf"), float("-inf"))
+    for bad in non_finite:
+        with pytest.raises(ValueError, match="finite"):
+            ObjectiveSpec(
+                objective_id="x", weight=bad, difficulty=0.5, baseline_intel=0.5
+            )
+        with pytest.raises(ValueError, match="finite"):
+            RemountConfig(intel_bonus=0.1, doctrine=bad)
+        with pytest.raises(ValueError, match="finite"):
+            ReplayEngine(sensitivity=bad)
+
+    # The in-[0,1] guards already rejected NaN via the range comparison; keep
+    # them pinned (a NaN baseline_intel / difficulty must also fail loudly).
+    for bad in non_finite:
+        with pytest.raises(ValueError, match=r"[0, 1]"):
+            ObjectiveSpec(
+                objective_id="x", weight=1.0, difficulty=bad, baseline_intel=0.5
+            )

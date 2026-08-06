@@ -35,6 +35,7 @@ Pure domain core — stdlib only, no `bond_api`, no `infrastructure`:
 | `src/never_say_never_again/remount_risk.py` | The cost of replaying: Poisson detection hazard, expected operations before alert, series/parallel reliability block diagrams, and campaign expected value. |
 | `src/never_say_never_again/asset_allocator.py` | Deterministic greedy allocation of scarce remastered assets by weight-scaled marginal gain over concave (submodular) improvement curves. |
 | `src/never_say_never_again/learning_curve.py` | Wright-family exponential learning forecast between two *computed* replay scores, plus the iteration-to-target solver. |
+| `src/never_say_never_again/sensitivity.py` | One-at-a-time sensitivity analysis bounding the sub-range of `Sensitivity`, `DETECTION_RATE`, and `LEARNING_RATE` over which both headline conclusions still hold. |
 
 Adapters — the only modules that know about anything outside the core:
 
@@ -90,7 +91,7 @@ uv run python scripts/plan.py
 uv run python scripts/execute.py            # --out PATH to redirect the JSON
 uv run python scripts/debrief.py
 
-# Hydrate manuscript tokens and render the four figures
+# Hydrate manuscript tokens and render the five figures
 uv run python scripts/z_generate_manuscript_variables.py
 ```
 

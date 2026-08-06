@@ -47,7 +47,11 @@ block-structured mission reliability is {{RISK_RELIABILITY}}. At the canonical
 reward {{RISK_CAMPAIGN_REWARD}} and penalty {{RISK_CAMPAIGN_PENALTY}} the
 campaign expected value is {{RISK_CAMPAIGN_EV}}.
 
-The sign of that expected value is the whole argument. Reliability is a
+The sign of that expected value is the whole argument. The model's own
+crossing — the smallest replay count at which the expected value turns
+non-positive — is {{RISK_EV_CROSSING}} for the canonical parameters; the
+canonical campaign length of {{RISK_CAMPAIGN_LENGTH}} sits comfortably below
+it, which is what "keep the remount short" means in numbers. Reliability is a
 *constant* of the mission's block structure, while the detection term
 `1 - exp(-rate * N)` rises monotonically in the replay count `N` toward 1. The
 expected value is therefore strictly decreasing in `N`, and it crosses zero
@@ -102,3 +106,31 @@ at or above that asymptote is reported as unreachable rather than as met on the
 first iteration — the curve approaches its asymptote but never attains it.
 
 ![Replay learning curve](figures/learning_curve.png)
+
+## Sensitivity and robustness
+
+The two headline conclusions above are each asserted at one sweep of a
+parameter, not at a single point. `src/never_say_never_again/sensitivity.py`
+sweeps each of the three parameters the conclusions rest on and reports the
+largest contiguous sub-range containing the canonical value over which *both*
+conclusions — remount improved [[`(a)`]] and campaign still pays [[`(b)`]] —
+hold:
+
+| Parameter | Sweep | Robust sub-range | Notes |
+| --- | --- | ---: | --- |
+| Success sensitivity `S` | {{SENS_SWEEP_SENSITIVITY}} | [{{SENS_SENSITIVITY_ROBUST_LO}}, {{SENS_SENSITIVITY_ROBUST_HI}}] | conclusion (a) holds across the whole declared sweep ({{SENS_SENSITIVITY_SPANS}} = spans) |
+| Detection rate | {{SENS_SWEEP_DETECTION_RATE}} | [{{SENS_DETECTION_RATE_ROBUST_LO}}, {{SENS_DETECTION_RATE_ROBUST_HI}}] | conclusion (b) breaks at high rate ({{SENS_DETECTION_RATE_SPANS}} = spans) |
+| Learning rate | {{SENS_SWEEP_LEARNING_RATE}} | [{{SENS_LEARNING_RATE_ROBUST_LO}}, {{SENS_LEARNING_RATE_ROBUST_HI}}] | affects neither (a) nor (b) ({{SENS_LEARNING_RATE_SPANS}} = spans) |
+
+![Sensitivity sweep — robust parameter sub-ranges](figures/sensitivity_sweep.png)
+
+Interpretation. The remount-improvement conclusion is *not* a knife-edge of the
+logistic steepness: it holds across the entire declared sensitivity sweep,
+because the remount config raises effective intel on every objective regardless
+of `S`. The campaign-still-pays conclusion is genuinely conditional: beyond a
+detection rate of about {{SENS_DETECTION_RATE_ROBUST_HI}} the accumulated
+hazard crosses the mission reliability within the canonical campaign length,
+and the expected value turns negative — so "keep the remount short" depends on
+the adversary's per-replay acuity. The learning rate, by construction, fights
+neither battle, and the analysis says so rather than pretending it does.
+

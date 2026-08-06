@@ -7,9 +7,9 @@ Usage:
 Strict by default: unresolved {{TOKEN}}s in a numbered prose section fail the
 run. ``--allow-draft`` writes the resolved tree anyway (intentional early
 drafts only). Writes ``output/data/manuscript_variables.json``, the resolved
-tree under ``output/manuscript/``, and four deterministic figures under
+tree under ``output/manuscript/``, and five deterministic figures under
 ``output/figures/``: ``op_diff_scores.png``, ``learning_curve.png``,
-``asset_allocation.png``, and ``asset_distribution.png``.
+``asset_allocation.png``, ``asset_distribution.png``, and ``sensitivity_sweep.png``.
 
 ``--output-root`` redirects the whole artifact set elsewhere. It exists so
 ``tests/test_regeneration_determinism.py`` can regenerate twice into two clean
@@ -35,6 +35,7 @@ from never_say_never_again.figures import (
     render_asset_distribution_figure,
     render_learning_curve_figure,
     render_op_diff_figure,
+    render_sensitivity_figure,
 )
 from never_say_never_again.learning_curve import (
     canonical_learning_forecast,
@@ -44,6 +45,7 @@ from never_say_never_again.manuscript_variables import (
     generate_variables,
     resolve_manuscript_tree,
 )
+from never_say_never_again.sensitivity import sensitivity_summary
 
 
 def main() -> int:
@@ -87,6 +89,9 @@ def main() -> int:
     render_asset_distribution_figure(
         canonical_catalog().counts_by_kind(),
         path=output_root / "figures" / "asset_distribution.png",
+    )
+    render_sensitivity_figure(
+        sensitivity_summary(), path=output_root / "figures" / "sensitivity_sweep.png"
     )
 
     print(f"Resolved {len(variables)} manuscript variables -> {variables_path}")

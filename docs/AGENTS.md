@@ -23,9 +23,9 @@ are the ones that have actually caused problems here.
    orchestrator. Deepen *inside* — add modules, enrich results dicts, register
    more gadgets — but never rename or remove those. Adding a new module-level
    name is safe; removing or renaming one is not.
-2. **Keep the domain core pure.** The six modules `mission_replay.py`,
+2. **Keep the domain core pure.** The seven modules `mission_replay.py`,
    `op_diff.py`, `legacy_assets.py`, `remount_risk.py`, `asset_allocator.py`,
-   and `learning_curve.py` import stdlib only — no `bond_api`, no
+   `learning_curve.py`, and `sensitivity.py` import stdlib only — no `bond_api`, no
    `infrastructure`. `tests/test_mission_provider.py` enforces this by reading
    the files, so a stray import fails the suite rather than degrading quietly.
 3. **Never hand-author a metric.** Every number in `manuscript/` arrives as a

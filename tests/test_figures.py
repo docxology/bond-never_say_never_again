@@ -14,9 +14,11 @@ from never_say_never_again.figures import (
     render_asset_distribution_figure,
     render_learning_curve_figure,
     render_op_diff_figure,
+    render_sensitivity_figure,
 )
 from never_say_never_again.learning_curve import canonical_learning_forecast
 from never_say_never_again.legacy_assets import AssetCatalog, LegacyAsset
+from never_say_never_again.sensitivity import sensitivity_summary
 
 
 def _fixture_catalog() -> AssetCatalog:
@@ -97,3 +99,18 @@ def test_render_allocation_figure_deterministic(tmp_path: Path):
     assert second.is_file()
     assert first.stat().st_size > 0
     assert first.read_bytes() == second.read_bytes()
+
+
+def test_render_sensitivity_figure_deterministic(tmp_path: Path):
+    first = render_sensitivity_figure(sensitivity_summary(), path=tmp_path / "s_a.png")
+    second = render_sensitivity_figure(sensitivity_summary(), path=tmp_path / "s_b.png")
+    assert first.is_file()
+    assert second.is_file()
+    assert first.stat().st_size > 0
+    assert first.read_bytes() == second.read_bytes()
+
+
+def test_render_sensitivity_figure_default_path():
+    out = render_sensitivity_figure()
+    assert out.exists()
+    assert out.stat().st_size > 0

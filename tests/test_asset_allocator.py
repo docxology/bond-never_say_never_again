@@ -410,3 +410,34 @@ def test_build_allocation_pool_tracks_the_config_it_is_given():
     for objective in identity_pool:
         cap, efficiency = ALLOCATION_CURVES[objective.objective_id]
         assert (objective.improvement_cap, objective.efficiency) == (cap, efficiency)
+
+
+def test_non_finite_inputs_are_rejected():
+    """NaN / infinity in allocation parameters must not propagate.
+
+    Regression for the guard class: `_require_non_negative` and the weight
+    check accepted NaN because NaN compares False against `0.0`; a NaN cap or
+    efficiency then produced NaN curves and a NaN-gain allocation plan.
+    """
+    non_finite = (float("nan"), float("inf"), float("-inf"))
+    for bad in non_finite:
+        with pytest.raises(ValueError, match="finite"):
+            improvement_curve(2, bad, 1.0)
+        with pytest.raises(ValueError, match="finite"):
+            improvement_curve(2, 1.0, bad)
+        with pytest.raises(ValueError, match="finite"):
+            AllocatableObjective(
+                objective_id="x",
+                weight=bad,
+                base_score=0.5,
+                improvement_cap=0.1,
+                efficiency=1.0,
+            )
+        with pytest.raises(ValueError, match="finite"):
+            AllocatableObjective(
+                objective_id="x",
+                weight=1.0,
+                base_score=0.5,
+                improvement_cap=0.1,
+                efficiency=bad,
+            )

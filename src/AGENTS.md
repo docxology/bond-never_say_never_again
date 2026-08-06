@@ -11,6 +11,7 @@ Layout:
 | `remount_risk.py` | Detection hazard, reliability blocks, campaign EV (`RemountRiskReport`, `assess_campaign`) |
 | `asset_allocator.py` | Marginal-gain allocation (`AllocatableObjective`, `allocate`, `AllocationPlan`) |
 | `learning_curve.py` | Exponential replay-learning forecast (`forecast_replay`, `LearningReplayForecast`) |
+| `sensitivity.py` | One-at-a-time sensitivity analysis (`robust_range`, `sensitivity_summary`) |
 | `mission.py` | Thin `bond_api.MissionProvider` adapter + gadget registration |
 | `manuscript_variables.py` | `{{TOKEN}}` hydration from `manuscript/config.yaml` + domain surface |
 | `figures.py` | Deterministic Matplotlib figures (Agg) to `output/figures/` |

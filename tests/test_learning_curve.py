@@ -199,3 +199,24 @@ def test_learning_forecast_validation():
             delta=0.2,
             target_iteration=None,
         )
+
+
+def test_non_finite_inputs_are_rejected():
+    """NaN / infinity must fail loudly, not produce NaN learning curves.
+
+    Regression: `exponential_learning` and `iterations_to_target` accepted NaN
+    initial/final/rate/target, so a NaN rate yielded a NaN trajectory, and NaN
+    inputs to the target solver yielded NaN (never a clean None).
+    """
+    non_finite = (float("nan"), float("inf"), float("-inf"))
+    for bad in non_finite:
+        with pytest.raises(ValueError, match="finite"):
+            exponential_learning(bad, 0.7, 0.5, 1)
+        with pytest.raises(ValueError, match="finite"):
+            exponential_learning(0.4, bad, 0.5, 1)
+        with pytest.raises(ValueError, match="finite"):
+            exponential_learning(0.4, 0.7, bad, 1)
+        with pytest.raises(ValueError, match="finite"):
+            iterations_to_target(0.4, 0.7, bad, 0.6)
+        with pytest.raises(ValueError, match="finite"):
+            iterations_to_target(0.4, 0.7, 0.5, bad)

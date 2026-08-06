@@ -134,3 +134,51 @@ uv run python scripts/z_generate_manuscript_variables.py
 rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**'  # expect zero
 git status --short   # expect clean — output/ is git-ignored
 ```
+
+
+---
+
+## Round-2 (2026-08-06)
+
+Round 2 found and fixed a genuine edge-defect class plus two declared open
+items, and deepened the manuscript and the sensitivity story. Gates stayed green
+throughout: **172 tests collected, 172 passed, 0 failed, 0 skipped; 100.00 %
+line+branch on `src/`** (10 modules, 827 statements, 184 branches), `ruff check`
++ `ruff format --check` (41 files) + `mypy src/ scripts/` (21 files) clean, and
+the byte-level regeneration test green with the new fifth figure in the
+compared set.
+
+### Findings and fixes
+
+| Finding | Fix | Test evidence |
+| --- | --- | --- |
+| **NaN/inf propagation through the validation guards.** The `_require_in_unit` / `_require_probability` guards already reject NaN (a range comparison like `0 <= nan <= 1` is false), but every **non-negative and positive** guard — `objective.weight`, `RemountConfig.doctrine`, `ReplayEngine.sensitivity`, `detection_rate`, `campaign reward/penalty`, `improvement cap/efficiency`, learning `rate`, and `AllocatableObjective.weight` — compared `< 0.0` / `<= 0.0`, which NaN and ±inf silently pass (every NaN comparison is false). NaN weights/rates/caps therefore sailed into command scores, expected values, allocation plans, and learning curves, returning NaN artifacts instead of failing loudly. | Added `math.isfinite(float(v))` to every such guard across `mission_replay.py`, `remount_risk.py`, `asset_allocator.py`, `learning_curve.py`; added a `_require_finite` guard to `learning_curve` for initial/final/rate/target. Rate `<= 0` still deliberately returns `None` (unreachable) from `iterations_to_target` — only NaN/inf are now rejected. | `test_mission_replay.py::test_validation_rejects_non_finite_parameters`; `test_remount_risk.py::test_non_finite_inputs_are_rejected`; `test_asset_allocator.py::test_non_finite_inputs_are_rejected`; `test_learning_curve.py::test_non_finite_inputs_are_rejected` — 14 distinct NaN/±inf cases now raise `ValueError` with a "finite" message. |
+| **Negative / NaN `epsilon` in `diff_outcomes` silently inverts verdicts.** `_verdict` uses `delta > epsilon` / `delta < -epsilon`; a negative `epsilon` makes even a zero delta classify as "improved" (verified: two identical replays diffed with `epsilon=-1.0` report `overall == "improved"`). | `diff_outcomes` now rejects any non-finite or negative `epsilon`. | `test_op_diff.py::test_negative_epsilon_is_rejected` — `-1.0`, `-1e-12`, NaN, ±inf all raise; `epsilon=0.0` still works. |
+| **C3 — no `optimal_campaign_length()` in the risk model.** The "keep the campaign short" crossing lived only in a test scanning integers. | Added `optimal_campaign_length(*, rate, blocks, reward, penalty) -> int`, exported and `__all__`-listed; raises `ValueError` when the campaign never crosses non-positive (e.g. zero penalty). | `test_remount_risk.py::test_optimal_campaign_length_is_the_first_non_positive_crossing` binds it to an independent scan (canonical = 13) and checks `EV(n)<=0` / `EV(n-1)>0`; `..._raises_when_crossing_never_happens` covers the no-crossing raise. |
+| **V1 — no sensitivity analysis bound the headline conclusions.** | New pure `src/never_say_never_again/sensitivity.py` (7th core module, stdlib-only) with `conclusions_hold` / `robust_range` / `sensitivity_summary`, sweeping each of `DEFAULT_SENSITIVITY`, `DETECTION_RATE`, `LEARNING_RATE` over a declared range and reporting the largest contiguous sub-range, containing the canonical value, over which **both** conclusions hold — including the EV zero-crossing via the new `optimal_campaign_length`. Live results: sensitivity robust over `[0.5, 20]`; detection-rate robust to `[0.05, 0.527]` (breaks at high rate); learning-rate insensitive by construction. | `tests/test_sensitivity.py` (9 tests), incl. the bounded detection-rate range, full-range sensitivity, learning-rate insensitivity, and an unknown-parameter negative control. Domain-purity gate in `test_mission_provider.py` updated 6→7 modules. |
+| **V1 (figures) — no visual for the robustness story.** | Added `render_sensitivity_figure` (1×3 panels of each swept parameter's robust sub-range) → `output/figures/sensitivity_sweep.png`; wired into `z_generate_manuscript_variables.py` and into `test_regeneration_determinism.py`'s compared artifact set. | `test_figures.py::test_render_sensitivity_figure_*` (deterministic + default path). |
+| **V1 (manuscript) — limitation bullet now narrowed, not deleted.** | `manuscript/03_results.md` gains a "Sensitivity and robustness" section with a live token table (`{{SENS_*}}`) and the fifth figure; `02_methodology.md` documents the OAT method; `04_conclusion.md` and `07_scope_and_related_work.md` updated. The `07` limitation now states the OAT (one-at-a-time) bound rather than "no sensitivity analysis". | `z_generate_manuscript_variables.py` resolves 64 variables strict; regenerated tree brace-clean. |
+| **D1 — `COUNTS.md` was hand-transcribed.** | Added `scripts/z_generate_counts.py`, which runs a real `pytest --cov` pass (JSON) excluding its own meta-test and rewrites `docs/_generated/COUNTS.md` from measured numbers; caveat preserved. | `test_scripts_smoke.py::test_z_generate_counts_regenerates_identical_file` regenerates into a temp path and asserts byte-equality with the committed file. |
+
+### Guardrails held
+
+1. Domain core now **seven** stdlib-only modules; the purity gate in
+   `test_mission_provider.py` reads the updated list.
+2. Zero mocks; every new test is real-computation.
+3. All new manuscript metrics are `{{TOKEN}}`s (64 variables resolve strict);
+   the config mirror gate now also binds the `robustness:` sweep block.
+4. Determinism intact: no RNG, no wall-clock; the two-run byte test passes with
+   the fifth figure included.
+5. `mission.py` public shape unchanged (`GADGET_REGISTRY`, `MissionProvider`,
+   `film`, the five methods).
+
+### Left for a future round
+
+- C1 (one-sided objectives in `diff_outcomes`), C2 (weights-by-scenario-name),
+  C4 (MISSION_SEED arg-invariance test), V2 (allocation-ceiling invariant),
+  V3 (uniform-spread comparator), D2 (script/AGENTS row consistency test), E1
+  (bond-utilities provenance), E2 (signed asset chains) — all unchanged and
+  still as documented above.
+- The sensitivity analysis is intentionally OAT; a joint/two-parameter sweep or
+  Sobol-style global decomposition would extend it (would belong in
+  `sensitivity.py`, keeping it stdlib-only).

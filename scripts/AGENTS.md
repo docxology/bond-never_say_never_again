@@ -12,7 +12,8 @@ phase plus helpers. Each self-bootstraps `src/` onto `sys.path`.
 | `debrief.py` | debrief | Print outcome success + lessons |
 | `run_mission.py` | full | Drive the whole flow via `bond_api.run_mission` |
 | `00_preflight.py` | verify | Confirm the provider satisfies the protocol |
-| `z_generate_manuscript_variables.py` | hydrate | Resolve `{{TOKEN}}`s + render the four figures |
+| `z_generate_manuscript_variables.py` | hydrate | Resolve `{{TOKEN}}`s + render the five figures |
+| `z_generate_counts.py` | verify | Regenerate `docs/_generated/COUNTS.md` from a real pytest+coverage run |
 
 Convention: signed operation names in `outcome.results` come from the domain
 core, never defined here. Business logic lives in `src/`, not in these scripts.

@@ -175,6 +175,19 @@ def assert_config_mirrors_the_code_constants(config: dict[str, object]) -> None:
     assert block["learning"]["bonus_cap"] == pytest.approx(LEARNING_BONUS_CAP)
     assert block["learning"]["target_score"] == pytest.approx(LEARNING_TARGET_SCORE)
 
+    from never_say_never_again.sensitivity import (
+        DETECTION_RATE_RANGE,
+        LEARNING_RATE_RANGE,
+        SENSITIVITY_RANGE,
+        STEP_COUNT,
+    )
+
+    sens = block["robustness"]
+    assert sens["sweep_sensitivity"] == list(SENSITIVITY_RANGE)
+    assert sens["sweep_detection_rate"] == list(DETECTION_RATE_RANGE)
+    assert sens["sweep_learning_rate"] == list(LEARNING_RATE_RANGE)
+    assert sens["steps"] == STEP_COUNT
+
 
 def test_config_yaml_mirrors_the_code_constants():
     """The live config must pass the mirror gate."""
@@ -195,6 +208,7 @@ _DRIFT_CASES = [
     (("allocation", "budget"), 999),
     (("learning", "rate"), 0.99),
     (("learning", "target_score"), 0.99),
+    (("robustness", "steps"), 999),
 ]
 
 

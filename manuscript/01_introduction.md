@@ -10,8 +10,9 @@ of a **legacy mission remount**: keep the objective set, refresh the resources,
 and re-run the scenario against the current threat model.
 
 REMOUNT ({{MISSION_CODENAME}}, package {{PACKAGE_VERSION}}) operationalizes
-that idea as software for {{FILM_IDENTITY}}. Its pure domain core provides six
-capabilities, each a separate module:
+that idea as software for {{FILM_IDENTITY}}. Its pure domain core provides seven capabilities in as many modules — six
+that compute the remount and a seventh that checks how much those six can be
+believed at parameter values the model did not assume:
 
 1. **Legacy mission replay** (`mission_replay.py`) — deterministically re-run a
    prior operation's scenario under a remount configuration.
@@ -26,6 +27,10 @@ capabilities, each a separate module:
    remastered assets across objectives by marginal gain.
 6. **Replay learning** (`learning_curve.py`) — forecast how far repeated
    rehearsal can push the command score, and when it stops paying.
+7. **Sensitivity** (`sensitivity.py`) — sweep each of the three model
+   parameters the conclusions rest on and report the sub-range over which the
+   two headline conclusions still hold, so the reader knows how much to trust
+   them rather than taking a single point as given.
 
 The first three answer the operative question of any re-op: *is the remount
 actually an improvement, and can we trust the intel it relied on?* The last

@@ -92,9 +92,10 @@ class ObjectiveSpec:
         if (
             isinstance(self.weight, bool)
             or not isinstance(self.weight, (int, float))
+            or not math.isfinite(float(self.weight))
             or self.weight <= 0.0
         ):
-            raise ValueError("ObjectiveSpec.weight must be a positive number")
+            raise ValueError("ObjectiveSpec.weight must be a finite positive number")
         _require_in_unit(self.difficulty, "ObjectiveSpec.difficulty")
         _require_in_unit(self.baseline_intel, "ObjectiveSpec.baseline_intel")
 
@@ -146,9 +147,12 @@ class RemountConfig:
         if (
             isinstance(self.doctrine, bool)
             or not isinstance(self.doctrine, (int, float))
+            or not math.isfinite(float(self.doctrine))
             or self.doctrine < 0.0
         ):
-            raise ValueError("RemountConfig.doctrine must be a non-negative number")
+            raise ValueError(
+                "RemountConfig.doctrine must be a finite non-negative number"
+            )
         _require_in_unit(self.realism_ceiling, "RemountConfig.realism_ceiling")
 
 
@@ -192,9 +196,10 @@ class ReplayEngine:
         if (
             isinstance(sensitivity, bool)
             or not isinstance(sensitivity, (int, float))
+            or not math.isfinite(float(sensitivity))
             or sensitivity <= 0.0
         ):
-            raise ValueError("sensitivity must be a positive number")
+            raise ValueError("sensitivity must be a finite positive number")
         _require_in_unit(success_threshold, "success_threshold")
         self._sensitivity = float(sensitivity)
         self._success_threshold = float(success_threshold)

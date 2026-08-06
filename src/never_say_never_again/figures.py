@@ -27,12 +27,14 @@ from never_say_never_again.mission_replay import (
     ReplayEngine,
     Scenario,
 )
+from never_say_never_again.sensitivity import SensitivityResult, sensitivity_summary
 
 __all__ = [
     "render_allocation_figure",
     "render_asset_distribution_figure",
     "render_learning_curve_figure",
     "render_op_diff_figure",
+    "render_sensitivity_figure",
 ]
 
 #: The identity config (no remount deltas) used as the ``original`` reference.
@@ -210,6 +212,50 @@ def render_allocation_figure(
         Path(path)
         if path is not None
         else _DEFAULT_OUTPUT / "figures" / "asset_allocation.png"
+    )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    return out
+
+
+def render_sensitivity_figure(
+    summary: dict[str, SensitivityResult] | None = None,
+    *,
+    path: str | Path | None = None,
+) -> Path:
+    """Render a 1x3 panel of each swept parameter's robust sub-range.
+
+    Each panel draws the parameter's declared sweep axis, marks the canonical
+    value, and shades the robust sub-range over which both headline
+    conclusions hold. A parameter whose range spans the whole axis (learning
+    rate; sensitivity) is drawn with full shading — that insensitivity is the
+    result, not whitespace. Writes to ``output/figures/sensitivity_sweep.png``.
+    """
+    summary = summary if summary is not None else sensitivity_summary()
+    order = ("sensitivity", "detection_rate", "learning_rate")
+    labels = {
+        "sensitivity": "Sensitivity (doc) / per-replay",
+        "detection_rate": "Detection rate / replay",
+        "learning_rate": "Learning rate / replay",
+    }
+    fig, axes = plt.subplots(1, 3, figsize=(12, 3.4), sharey=True)
+    for ax, name in zip(axes, order, strict=True):
+        result = summary[name]
+        ax.axvspan(result.lo, result.hi, color="#bfdbfe", alpha=0.7, label="robust")
+        ax.axvline(result.canonical, color="#b91c1c", linestyle="--", label="canonical")
+        ax.set_xlabel(labels[name])
+        ax.set_ylim(0.0, 1.0)
+        ax.set_yticks([])
+        ax.set_title(name.replace("_", " "))
+        ax.legend(loc="lower right", fontsize=7)
+    fig.suptitle("REMOUNT — robust parameter sub-ranges (both conclusions hold)")
+    fig.tight_layout()
+
+    out = (
+        Path(path)
+        if path is not None
+        else _DEFAULT_OUTPUT / "figures" / "sensitivity_sweep.png"
     )
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=300, bbox_inches="tight")

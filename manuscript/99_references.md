@@ -31,14 +31,18 @@ that the code does not implement.
 7. The Unicode Consortium (2023). *Unicode Standard Annex #15: Unicode
    Normalization Forms.* <https://www.unicode.org/reports/tr15/> — the NFC
    normalization applied before hashing.
+8. Saltelli, A., Ratto, M., Andres, T., Campolongo, F., Cariboni, J., Gatelli,
+   D., Saisana, M., & Tarantola, S. (2008). *Global Sensitivity Analysis. The
+   Primer.* John Wiley & Sons. doi:10.1002/9780470725184 — the
+   one-at-a-time parameter-sweep framing behind `sensitivity.py`.
 
 ## BOND suite (unpublished local working trees)
 
-8. Friedman, D. A. (2026). *BOND-API: The Frozen Mission Protocol Contract for
+9. Friedman, D. A. (2026). *BOND-API: The Frozen Mission Protocol Contract for
    the BOND Film Suite.* Unpublished software, PROJECT BOND local working tree
    (`projects/working/bond/bond-api`) — no remote, no DOI. The protocol
    `mission.py` implements.
-9. Friedman, D. A. (2026). *BOND-Utilities (Q-BRANCH): Layer 0 Foundation.*
+10. Friedman, D. A. (2026). *BOND-Utilities (Q-BRANCH): Layer 0 Foundation.*
    Unpublished software, PROJECT BOND local working tree
    (`projects/working/bond/bond-utilities`) — no remote, no DOI. Not bound by
    this package; listed because `TODO.md` names it as a declared integration
@@ -46,5 +50,5 @@ that the code does not implement.
 
 ## Source work
 
-10. *Never Say Never Again* (1983). Directed by Irvin Kershner. Warner Bros. —
+11. *Never Say Never Again* (1983). Directed by Irvin Kershner. Warner Bros. —
     a remount of *Thunderball* (1965), the premise this package models.

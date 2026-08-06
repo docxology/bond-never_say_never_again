@@ -160,6 +160,7 @@ def test_domain_core_has_no_bond_api_imports():
         "never_say_never_again.remount_risk",
         "never_say_never_again.asset_allocator",
         "never_say_never_again.learning_curve",
+        "never_say_never_again.sensitivity",
     ]
     for module_name in modules:
         module_path = Path(SRC) / (module_name.replace(".", "/") + ".py")
@@ -174,7 +175,8 @@ def test_purity_domain_core_pyc_importable_standalone():
     import never_say_never_again.legacy_assets
     import never_say_never_again.mission_replay
     import never_say_never_again.op_diff
-    import never_say_never_again.remount_risk  # noqa: F401
+    import never_say_never_again.remount_risk
+    import never_say_never_again.sensitivity  # noqa: F401
 
 
 def test_engine_property_is_the_registered_gadget():

@@ -79,8 +79,13 @@ def marginal_gain(assets: int, cap: float, efficiency: float) -> float:
 
 
 def _require_non_negative(value: float, label: str) -> None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0.0:
-        raise ValueError(f"{label} must be a non-negative number")
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(float(value))
+        or value < 0.0
+    ):
+        raise ValueError(f"{label} must be a finite non-negative number")
 
 
 def _require_probability(value: float, label: str) -> None:
@@ -118,9 +123,12 @@ class AllocatableObjective:
         if (
             isinstance(self.weight, bool)
             or not isinstance(self.weight, (int, float))
+            or not math.isfinite(float(self.weight))
             or self.weight <= 0.0
         ):
-            raise ValueError("AllocatableObjective.weight must be a positive number")
+            raise ValueError(
+                "AllocatableObjective.weight must be a finite positive number"
+            )
         _require_probability(self.base_score, "AllocatableObjective.base_score")
         _require_non_negative(
             self.improvement_cap, "AllocatableObjective.improvement_cap"

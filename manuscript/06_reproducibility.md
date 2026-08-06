@@ -9,7 +9,7 @@ identical PNG bytes.
 
 The claim covers the whole persisted artifact set — every file under
 `output/`: `data/manuscript_variables.json`, the resolved manuscript tree under
-`manuscript/`, and the four PNGs under `figures/`. No token reads the clock.
+`manuscript/`, and the five PNGs under `figures/`. No token reads the clock.
 The date on this document, `MANUSCRIPT_DATE`, is `paper.date` from the
 committed `manuscript/config.yaml`, so it changes only when a human changes it
 in version control — never merely because the generator ran again. That is

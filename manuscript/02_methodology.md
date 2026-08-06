@@ -125,3 +125,26 @@ them wholesale, and migrates a subset in a single deterministic batch. The
 canonical index the remount actually consumes is `LEGACY_INDEX`, exposed
 through `canonical_catalog()` so the mission, the manuscript, and the figures
 share one definition of the migration.
+
+## Sensitivity analysis
+
+`sensitivity.py` asks how much of the above to believe. The two headline
+conclusions — that the remount improves over the original (`(a)`), and that a
+short campaign still pays (`(b)`) — are produced at a single canonical
+parameter set. This module sweeps each of the three parameters the conclusions
+rest on over a declared range, holding the other two at their canonical values,
+and reports the largest contiguous sub-range containing the canonical value over
+which *both* conclusions hold. `(b)` is evaluated through the same
+:func:`optimal_campaign_length` the risk model exports, so the analysis and the
+headline crossing are one object, not a parallel derivation [@saltelli2008sensitivity].
+
+* `{{SENS_SWEEP_SENSITIVITY}}` — the success-curve sensitivity `S`;
+* `{{SENS_SWEEP_DETECTION_RATE}}` — the per-replay detection rate;
+* `{{SENS_SWEEP_LEARNING_RATE}}` — the per-replay learning rate.
+
+Because the learning rate feeds neither the op diff (`(a)`) nor the campaign
+expected value (`(b)`), its robust sub-range spans the whole declared sweep by
+construction; that insensitivity is a reported result, not a gap. The analysis
+is one-dimensional — it perturbs one parameter at a time rather than sampling
+the joint space — which is appropriate for binding two specific conclusions but
+is not a general global-sensitivity decomposition.

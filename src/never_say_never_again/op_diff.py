@@ -16,6 +16,7 @@ The module is pure (stdlib only).
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -113,6 +114,13 @@ def diff_outcomes(
     """
     if not isinstance(original, ReplayResult) or not isinstance(remount, ReplayResult):
         raise ValueError("diff_outcomes requires two ReplayResult instances")
+    if (
+        isinstance(epsilon, bool)
+        or not isinstance(epsilon, (int, float))
+        or not math.isfinite(float(epsilon))
+        or epsilon < 0.0
+    ):
+        raise ValueError("epsilon must be a finite non-negative number")
 
     remount_by_id = {outcome.objective_id: outcome for outcome in remount.outcomes}
 

@@ -85,3 +85,32 @@ def test_z_generate_manuscript_variables_script():
     assert (PROJECT_ROOT / "output" / "figures" / "asset_distribution.png").is_file()
     assert (PROJECT_ROOT / "output" / "figures" / "learning_curve.png").is_file()
     assert (PROJECT_ROOT / "output" / "figures" / "asset_allocation.png").is_file()
+
+
+def test_z_generate_counts_regenerates_identical_file(tmp_path: Path):
+    """D1: COUNTS.md is generated, not hand-transcribed.
+
+    Runs the real generator (a genuine pytest+coverage pass, exactly as a
+    reader would) into a temp path and asserts the byte-identical COMMITTED
+    file matches it. This turns the manual transcription step into a gate: if
+    the committed COUNTS.md ever drifts from what the suite actually measures,
+    this test fails and the fix is to regenerate the file.
+    """
+    out = tmp_path / "COUNTS.md"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(PROJECT_ROOT / "scripts" / "z_generate_counts.py"),
+            "--out",
+            str(out),
+        ],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=900,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr + proc.stdout
+    committed = PROJECT_ROOT / "docs" / "_generated" / "COUNTS.md"
+    assert committed.is_file()
+    assert out.read_bytes() == committed.read_bytes()

@@ -55,6 +55,14 @@ from never_say_never_again.remount_risk import (
     REMOUNT_RISK_BLOCKS,
     REPLAY_CAMPAIGN_LENGTH,
     canonical_risk_report,
+    optimal_campaign_length,
+)
+from never_say_never_again.sensitivity import (
+    DETECTION_RATE_RANGE,
+    LEARNING_RATE_RANGE,
+    SENSITIVITY_RANGE,
+    STEP_COUNT,
+    robust_range,
 )
 
 __all__ = [
@@ -159,6 +167,18 @@ def generate_variables(
     asset_fingerprint = catalog.stable_integrity()[:12]
     asset_kinds = catalog.counts_by_kind()
 
+    # Sensitivity / robustness: the EV zero crossing and each parameter's
+    # robust sub-range — all live engine output, never hand-copied.
+    ev_crossing = optimal_campaign_length(
+        rate=DETECTION_RATE,
+        blocks=REMOUNT_RISK_BLOCKS,
+        reward=CAMPAIGN_REWARD,
+        penalty=CAMPAIGN_PENALTY,
+    )
+    sens = robust_range("sensitivity")
+    det_rate = robust_range("detection_rate")
+    learn_rate = robust_range("learning_rate")
+
     return {
         "FILM_IDENTITY": FILM_IDENTITY,
         "MISSION_CODENAME": MISSION_CODENAME,
@@ -222,6 +242,21 @@ def generate_variables(
         ),
         "PYTHON_VERSION": platform.python_version(),
         "MANUSCRIPT_DATE": manuscript_date(config),
+        # Sensitivity / robustness — all live-engine numbers.
+        "RISK_EV_CROSSING": str(ev_crossing),
+        "SENS_SWEEP_STEPS": str(STEP_COUNT),
+        "SENS_SWEEP_SENSITIVITY": f"[{SENSITIVITY_RANGE[0]:g}, {SENSITIVITY_RANGE[1]:g}]",
+        "SENS_SWEEP_DETECTION_RATE": f"[{DETECTION_RATE_RANGE[0]:g}, {DETECTION_RATE_RANGE[1]:g}]",
+        "SENS_SWEEP_LEARNING_RATE": f"[{LEARNING_RATE_RANGE[0]:g}, {LEARNING_RATE_RANGE[1]:g}]",
+        "SENS_SENSITIVITY_ROBUST_LO": f"{sens.lo:.3f}",
+        "SENS_SENSITIVITY_ROBUST_HI": f"{sens.hi:.3f}",
+        "SENS_SENSITIVITY_SPANS": ("true" if sens.spans_range else "false"),
+        "SENS_DETECTION_RATE_ROBUST_LO": f"{det_rate.lo:.3f}",
+        "SENS_DETECTION_RATE_ROBUST_HI": f"{det_rate.hi:.3f}",
+        "SENS_DETECTION_RATE_SPANS": ("true" if det_rate.spans_range else "false"),
+        "SENS_LEARNING_RATE_ROBUST_LO": f"{learn_rate.lo:.3f}",
+        "SENS_LEARNING_RATE_ROBUST_HI": f"{learn_rate.hi:.3f}",
+        "SENS_LEARNING_RATE_SPANS": ("true" if learn_rate.spans_range else "false"),
     }
 
 

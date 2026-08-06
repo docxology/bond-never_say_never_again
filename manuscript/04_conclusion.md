@@ -33,9 +33,13 @@ analysis reusable beyond the BOND suite.
 
 What the package does *not* establish is equally worth stating. Every number
 here is produced by the model at one canonical parameter set; none is a
-measurement of a real operation, and no sensitivity analysis over those
-parameters is reported. The success curve's sensitivity, the detection rate,
-and the learning rate are chosen, not fitted. The conclusions are therefore
-claims about this model's behaviour — reproducible to the byte, and open to
-being falsified by anyone who reruns it — rather than claims about the world.
-The full list of bounds is in the scope section.
+measurement of a real operation. The success curve's sensitivity, the detection
+rate, and the learning rate are chosen, not fitted — but the analysis in
+`03_results.md` now reports over which sub-range of each the two headline
+conclusions still hold, so the reader can see that the remount-improvement
+result is robust to the logistic's steepness while the campaign-still-pays
+result is conditional on the detection rate staying below about
+{{SENS_DETECTION_RATE_ROBUST_HI}}. The conclusions are therefore claims about
+this model's behaviour — reproducible to the byte, robust where the analysis
+shows them to be, and open to being falsified by anyone who reruns it — rather
+than claims about the world. The full list of bounds is in the scope section.
