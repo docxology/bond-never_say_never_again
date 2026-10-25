@@ -75,7 +75,8 @@ those names.
 ## Quick start
 
 ```bash
-# From this package directory. bond-api resolves via a local path source.
+# From this package directory. bond-api resolves via the local path source
+# `../bond-api` — a sibling bond-api checkout next to this package.
 uv sync --extra dev
 
 # Verify the environment and protocol conformance
@@ -136,7 +137,10 @@ re-measure rather than trusting a figure quoted in prose.
 | [`TODO.md`](TODO.md) | Remaining work and declared integration points |
 | [`STANDALONE.md`](STANDALONE.md) | The fork contract this package was created under |
 
-## Local-only
+## Repository
 
-This is a local-only PROJECT BOND working tree. There is no git remote and
-nothing is ever pushed.
+Canonical upstream: [`docxology/bond-never_say_never_again`](https://github.com/docxology/bond-never_say_never_again)
+(private, branch `main`). This is a PROJECT BOND working tree — publish through
+the GitVault tool (`./_tools/vault --wait with-repo docxology/bond-never_say_never_again -- git push origin main`)
+rather than by an ad-hoc push from the package directory, and never
+force-push.

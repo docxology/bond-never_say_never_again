@@ -9,9 +9,9 @@ tags: [bond, film, remount, mission-replay, op-diff, asset-migration]
 
 # never-say-never-again (REMOUNT)
 
-Project-scoped skill for the BOND film package at
-`projects/working/bond/never_say_never_again/`. Load this when working inside
-the project.
+Project-scoped skill for the BOND film package checked out as this repository
+(`docxology/bond-never_say_never_again`, branch `main`). Load this when working
+inside the project.
 
 ## When to Use
 
@@ -49,7 +49,7 @@ uv run mypy src/ scripts/
 - `learning_curve.py` — exponential replay-learning forecast + iteration-to-
   target solver.
 - `mission.py` — the thin `bond_api.MissionProvider` adapter + gadgets
-  (codename REMOUNT / REPLAY).
+  (codename REMOUNT).
 
 ## Pitfalls
 
@@ -61,7 +61,8 @@ uv run mypy src/ scripts/
   prose section; inject it as `{{TOKEN}}`.
 - **Lineage grep.** Use `rg "template[_]code_project"` (bracket-split) so a
   doc describing the verification cannot trip its own gate.
-- **Local-only.** No remote, never push.
+- **Publish through the GitVault tool.** The canonical remote is
+  `docxology/bond-never_say_never_again`; never force-push.
 
 ## Cross-refs
 

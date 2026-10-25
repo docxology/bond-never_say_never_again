@@ -15,25 +15,30 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "numpy>=1.24.0",
-    "matplotlib>=3.7.0",
-    "pyyaml>=6.0",
+    "numpy>=2.0.0",
+    "matplotlib>=3.9.0",
+    "pyyaml>=6.0.2",
     "bond-api",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4.0",
-    "pytest-cov>=4.1.0",
-    "ruff>=0.6.0",
-    "mypy>=1.10.0",
-    "types-PyYAML>=6.0",
+    "pytest>=8.0.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.9.0",
+    "mypy>=1.14.0",
+    "types-PyYAML>=6.0.12",
 ]
 
 # bond-api is a sibling package in the BOND suite (Layer 1 — the frozen
 # MissionProvider protocol). Films implement this package's mission.py against it.
+# The path is the sibling checkout next to this package (`../bond-api`), so the
+# monorepo-by-directory layout resolves in any parent directory — as a sibling
+# under the GitVault `docxology/Private/` slot, and as a sibling inside the
+# original `projects/working/bond/` tree. Point it at a local bond-api checkout
+# before `uv sync` / `uv lock`.
 [tool.uv.sources]
-bond-api = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }
+bond-api = { path = "../bond-api" }
 
 [tool.pytest.ini_options]
 # RASP Strict Assertion: Tests must be clearly separated and structurally identifiable

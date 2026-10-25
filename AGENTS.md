@@ -1,7 +1,8 @@
 # never_say_never_again — AGENTS
 
-A **PROJECT BOND** film package. Scope is EXACTLY this directory. Local-only
-working tree — never push, there is no remote.
+A **PROJECT BOND** film package. Scope is EXACTLY this directory. Canonical
+upstream: `docxology/bond-never_say_never_again` on GitHub (branch `main`) —
+publish through the GitVault tool, never by an ad-hoc push.
 
 ## Mission
 
@@ -9,10 +10,10 @@ Codename **REMOUNT**. Implement the frozen `bond_api.MissionProvider` protocol
 over a pure, deterministic domain core that models **legacy mission replay,
 op diff, and legacy asset migration** (a software remount of *Thunderball*).
 
-Codename **REMOUNT**. Six pure domain modules model legacy mission replay, op
-diff, asset migration, escalation risk, marginal-gain allocation, and replay
-learning; three adapter modules bind that core to the protocol, the manuscript,
-and Matplotlib.
+Codename **REMOUNT**. Seven pure domain modules model legacy mission replay, op
+diff, asset migration, escalation risk, marginal-gain allocation, replay
+learning, and one-at-a-time sensitivity; three adapter modules bind that core to
+the protocol, the manuscript, and Matplotlib.
 
 ## Layer contract
 
@@ -77,7 +78,9 @@ git status --short   # clean after commit
 
 Read the output of each; an exit code alone is not evidence. If `uv` reports
 `Failed to initialize cache`, that is a sandbox restriction — rerun with the
-sandbox disabled.
+sandbox disabled. If coverage dies with `no such table: meta` on its data file,
+the working tree is on a filesystem its SQLite store rejects — rerun with
+`COVERAGE_FILE` pointed at a local disk (`COVERAGE_FILE=/tmp/.coverage`).
 
 ## Reference
 

@@ -1,9 +1,9 @@
 # TODO — never_say_never_again (REMOUNT)
 
 `never_say_never_again` is the PROJECT BOND film package for mission codename
-**REMOUNT**: a pure, deterministic domain core (six stdlib-only modules —
+**REMOUNT**: a pure, deterministic domain core (seven stdlib-only modules —
 replay, op diff, asset migration, escalation risk, marginal-gain allocation,
-replay learning) behind three adapters (`mission.py` implementing the frozen
+replay learning, sensitivity) behind three adapters (`mission.py` implementing the frozen
 `bond_api.MissionProvider`, `manuscript_variables.py`, `figures.py`). Verified
 state as of this file's commit, measured by a real run in this session:
 **140 tests collected, 140 passed, 0 failed, 0 skipped; 100.00 % line+branch
@@ -89,15 +89,18 @@ it delivers.
 7. **The uniform-spread comparator currently proves only a floor** (see V3).
    This is disclosed rather than dressed up; the discriminating gate is the
    exhaustive-optimality search with its unweighted-selection negative control.
-8. **Local-only tree.** There is no git remote and nothing is ever pushed.
-   Scope is exactly this directory.
+8. **Scope is exactly this directory.** The canonical upstream is the private
+   GitHub repository `docxology/bond-never_say_never_again`; publish through
+   the GitVault tool, never by an ad-hoc push.
 
 ## Guardrails to preserve
 
 Invariants, not tasks. Any change above must keep all of these true.
 
 1. The domain core stays `bond_api`- and `infrastructure`-free and stdlib-only
-   (currently six modules; V1 would make it seven — update the list read by
+   (seven modules since V1 landed: `mission_replay.py`, `op_diff.py`,
+   `legacy_assets.py`, `remount_risk.py`, `asset_allocator.py`,
+   `learning_curve.py`, `sensitivity.py` — the list read by
    `tests/test_mission_provider.py`).
 2. No mock framework. Real data, real computation; `monkeypatch` for
    environment isolation only.
@@ -120,16 +123,18 @@ restriction; rerun with the sandbox disabled.
 uv sync --extra dev
 
 uv run pytest tests/ --cov=src --cov-fail-under=90
-# expect: 140 passed, 0 failed, 0 skipped; TOTAL 100.00 % on src/ (floor 90 %)
+# expect: 172 passed, 0 failed, 0 skipped; TOTAL 100.00 % on src/ (floor 90 %)
+# On a network/external volume, point coverage at a local disk first
+# (COVERAGE_FILE=/tmp/.coverage) — its SQLite store fails on some non-local FS.
 
 uv run ruff check src/ scripts/ tests/          # expect: All checks passed!
-uv run ruff format --check src/ scripts/ tests/ # expect: 37 files already formatted
-uv run mypy src/ scripts/                       # expect: no issues in 19 source files
+uv run ruff format --check src/ scripts/ tests/ # expect: 41 files already formatted
+uv run mypy src/ scripts/                       # expect: no issues in 21 source files
 
 uv run python scripts/00_preflight.py           # protocol conformance
 uv run python scripts/run_mission.py            # full five-stage flow
 uv run python scripts/z_generate_manuscript_variables.py
-# expect: 50 variables resolved (strict), four figures under output/figures/
+# expect: 64 variables resolved (strict), five figures under output/figures/
 
 rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**'  # expect zero
 git status --short   # expect clean — output/ is git-ignored

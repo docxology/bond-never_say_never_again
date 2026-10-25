@@ -12,7 +12,9 @@ are the ones that have actually caused problems here.
   allocation, and learning.
 - **Your scope**: this directory and nothing else. No sibling BOND package, no
   bond root file, no template repo.
-- **The tree is local-only.** There is no git remote. Commit here; never push.
+- **Upstream is GitHub.** The canonical remote is
+  `docxology/bond-never_say_never_again` (branch `main`). Commit here; publish
+  only through the GitVault tool, never by an ad-hoc push.
 
 ## Before you touch anything
 

@@ -1,6 +1,6 @@
 # Architecture — Never Say Never Again (REMOUNT)
 
-Nine modules in `src/never_say_never_again/`, in two tiers: a pure domain core
+Ten modules in `src/never_say_never_again/`, in two tiers: a pure domain core
 of seven, and three modules that adapt that core to the outside world (the BOND
 protocol, the manuscript, and Matplotlib). Nothing in the core knows any of
 those three exist.

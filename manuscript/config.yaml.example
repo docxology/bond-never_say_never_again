@@ -15,7 +15,7 @@ authors:
     corresponding: true
 
 publication:
-  repository_url: "local-only (PROJECT BOND working tree; no remote)"
+  repository_url: "https://github.com/docxology/bond-never_say_never_again"
   journal: "BOND Suite Technical Series"
   year: "2026"
 

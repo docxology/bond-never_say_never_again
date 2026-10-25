@@ -7,8 +7,10 @@ orientation; this is the checklist.
 
 - Work only inside this package directory. Never edit a sibling BOND package,
   a bond root file, or the template repository.
-- This tree is **local-only and has no git remote**. Commit here; never push.
-  Commit with path-scoped adds inside this repo only.
+- The canonical upstream is **`docxology/bond-never_say_never_again`** (private,
+  branch `main`). Commit here; publish only through the GitVault tool
+  (`./_tools/vault --wait with-repo docxology/bond-never_say_never_again -- git push origin main`),
+  never by an ad-hoc push. Commit with path-scoped adds inside this repo only.
 - `output/` is git-ignored and fully regenerable. Never hand-edit anything
   under it, and never edit a generated artifact to make a gate pass.
 
@@ -23,8 +25,8 @@ orientation; this is the checklist.
 ## 3. The invariants
 
 1. **Domain purity.** `mission_replay.py`, `op_diff.py`, `legacy_assets.py`,
-   `remount_risk.py`, `asset_allocator.py`, and `learning_curve.py` import
-   stdlib only — no `bond_api`, no `infrastructure`, no third-party runtime
+   `remount_risk.py`, `asset_allocator.py`, `learning_curve.py`, and
+   `sensitivity.py` import stdlib only — no `bond_api`, no `infrastructure`, no third-party runtime
    dependency. Only `mission.py` imports `bond_api`; only `figures.py` imports
    Matplotlib; only `manuscript_variables.py` imports `yaml`.
 2. **Protocol stability.** `mission.py` must keep exposing, unchanged:

@@ -88,7 +88,7 @@ honest:
 
 | Gate | Test | Prevents |
 | --- | --- | --- |
-| Domain purity | `test_domain_core_has_no_bond_api_imports` reads the six core module files and asserts `bond_api` never appears | The layer contract eroding one import at a time |
+| Domain purity | `test_domain_core_has_no_bond_api_imports` reads the seven core module files and asserts `bond_api` never appears | The layer contract eroding one import at a time |
 | Protocol conformance | `isinstance(provider, Protocol)` against the real frozen `bond_api` contract, plus discovery by slug | Silently breaking fleet consumers |
 | Token resolution | Every `{{TOKEN}}` in `manuscript/[0-9][0-9]_*.md` must exist in `generate_variables()`, and the resolved tree must be brace-clean | Raw braces reaching the PDF; tokens referencing nothing |
 | No hand-authored metrics | The results section is scanned for bare decimals outside code spans and tokens | Prose numbers drifting from the code |

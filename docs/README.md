@@ -12,7 +12,7 @@ package overview lives in `../README.md`.
 | --- | --- |
 | [`AGENTS.md`](AGENTS.md) | You are an agent about to work in this package. Start here — it is the entry point and routes to everything below. |
 | [`agent_instructions.md`](agent_instructions.md) | You need the concrete operational rules: scope, purity, protocol stability, the gate commands, and the specific traps this package has already hit. |
-| [`architecture.md`](architecture.md) | You are about to add, move, or change a module. Explains all nine `src/` modules individually, how they compose, and exactly how `mission.py` satisfies the frozen `bond_api` `MissionProvider`. |
+| [`architecture.md`](architecture.md) | You are about to add, move, or change a module. Explains all ten `src/` modules individually, how they compose, and exactly how `mission.py` satisfies the frozen `bond_api` `MissionProvider`. |
 | [`testing_philosophy.md`](testing_philosophy.md) | You are about to write or change a test. Explains why there are no mocks, what makes a test here meaningful rather than merely green, and the standing gates. |
 | [`style_guide.md`](style_guide.md) | You need the typing, docstring, validation, and formatting conventions. |
 | [`_generated/COUNTS.md`](_generated/COUNTS.md) | You want the measured test count and coverage. Regenerated from a real run — never hand-edited, and never quoted from memory. |
