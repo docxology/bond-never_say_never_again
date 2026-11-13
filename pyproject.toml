@@ -88,7 +88,7 @@ ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 88
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 # Validation errors across the suite raise ValueError with actionable messages
