@@ -3,6 +3,30 @@
 A **PROJECT BOND** film package implementing the frozen `bond_api`
 `MissionProvider` protocol for mission codename **REMOUNT**.
 
+## Mission model
+
+```mermaid
+flowchart TD
+    accTitle: Never Say Never Again implemented mission analyses
+    accDescr: Legacy objectives, intelligence assets and remount configuration feed Replay legacy and remount; compare outcomes; Verify and remaster assets; allocate marginal gains; Campaign hazard and rehearsal learning. The mission adapter returns objective deltas, migrated assets and campaign forecasts with provenance, then a debrief.
+    I["Legacy objectives, intelligence assets and remount configuration"]
+    G0["Replay legacy and remount; compare outcomes"]
+    I --> G0
+    G1["Verify and remaster assets; allocate marginal gains"]
+    I --> G1
+    G2["Campaign hazard and rehearsal learning"]
+    I --> G2
+    O["mission.py: execute returns MissionOutcome<br/>Objective deltas, migrated assets and campaign forecasts and provenance"]
+    G0 --> O
+    G1 --> O
+    G2 --> O
+    O --> F["debrief: mission summary"]
+```
+
+The branches group implemented capabilities; they do not imply a runtime order.
+
+**Source map:** [`mission_replay.py`](src/never_say_never_again/mission_replay.py), [`op_diff.py`](src/never_say_never_again/op_diff.py); [`legacy_assets.py`](src/never_say_never_again/legacy_assets.py), [`asset_allocator.py`](src/never_say_never_again/asset_allocator.py); [`remount_risk.py`](src/never_say_never_again/remount_risk.py), [`learning_curve.py`](src/never_say_never_again/learning_curve.py); [`mission.py`](src/never_say_never_again/mission.py).
+
 *Never Say Never Again* (1983) is itself a **remount** of *Thunderball* (1965):
 a completed operation re-opened, modernized, and re-run. This package makes
 that premise literal and deterministic. It replays a legacy mission under a
