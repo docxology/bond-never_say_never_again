@@ -1,5 +1,7 @@
 # Working inside never_say_never_again (REMOUNT)
 
+[Package maintenance](package-maintenance.md) identifies the dependency and citation records.
+
 Entry point for any agent modifying this package. Read this page in full before
 your first edit; it is short, and the four rules in "Before you touch anything"
 are the ones that have actually caused problems here.
