@@ -1,5 +1,7 @@
 # Never Say Never Again: REMOUNT
 
+See [package maintenance](docs/package-maintenance.md) for dependency and citation records.
+
 A **PROJECT BOND** film package implementing the frozen `bond_api`
 `MissionProvider` protocol for mission codename **REMOUNT**.
 

@@ -1,5 +1,7 @@
 # docs/ — Never Say Never Again (REMOUNT)
 
+[Package maintenance](package-maintenance.md) covers dependency and release records.
+
 Documentation for the `never_say_never_again` film package of PROJECT BOND,
 mission codename **REMOUNT**. This directory holds the *operational* docs — how
 the package is built, tested, and safely modified. The *scientific* write-up
