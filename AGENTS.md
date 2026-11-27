@@ -1,5 +1,8 @@
 # never_say_never_again — AGENTS
 
+The [package maintenance guide](docs/package-maintenance.md) records the
+distribution identity, Python selection, dependency provenance, and citation metadata.
+
 A **PROJECT BOND** film package. Scope is EXACTLY this directory. Canonical
 upstream: `docxology/bond-never_say_never_again` on GitHub (branch `main`) —
 publish through the GitVault tool, never by an ad-hoc push.
